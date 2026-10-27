@@ -1,135 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import Hls, { type Level } from 'hls.js';
+import { useEffect, useState } from 'react';
 import type { NowPlaying } from '../nowPlaying.ts';
-
-export const STREAM_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/hls/live.m3u8';
-
-type Quality = 'lossless' | 'aac';
-type Status = 'idle' | 'buffering' | 'playing' | 'paused' | 'error';
-type Mode = 'native' | 'hls.js' | 'unsupported';
-interface Info {
-  codec: string;
-  lossless: boolean;
-}
-
-const isFlac = (l: Level) => /flac/i.test(l.audioCodec ?? '');
-
-function detectMode(): Mode {
-  const canNative = document.createElement('audio').canPlayType('application/vnd.apple.mpegurl') !== '';
-  // Safari/iOS play HLS (including FLAC) natively; elsewhere hls.js over MSE is more predictable.
-  if (canNative && (navigator.vendor.includes('Apple') || !Hls.isSupported())) return 'native';
-  return Hls.isSupported() ? 'hls.js' : 'unsupported';
-}
+import { useMediaSession } from '../hooks/useMediaSession.ts';
+import { useRadioStream } from '../hooks/useRadioStream.ts';
 
 export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
-  const resumeRef = useRef(false);
-  const mode = useMemo(detectMode, []);
-  const [quality, setQuality] = useState<Quality>('lossless');
-  const [status, setStatus] = useState<Status>('idle');
-  const [info, setInfo] = useState<Info | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const { audioRef, audioProps, mode, quality, status, info, notice, togglePlay, changeQuality } = useRadioStream();
   const [volume, setVolume] = useState(0.8);
+  useMediaSession(track);
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
-  }, [volume]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || mode !== 'hls.js') return;
-    const resume = resumeRef.current;
-    resumeRef.current = false;
-    setNotice(null);
-    setInfo(null);
-
-    const hls = new Hls({ autoStartLoad: false });
-    hlsRef.current = hls;
-    let retry: ReturnType<typeof setTimeout> | undefined;
-
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      // hls.js would otherwise ABR-pick AAC (higher declared bandwidth), so choose the level explicitly.
-      const wantLossless = quality === 'lossless';
-      const idx = hls.levels.findIndex((l) => isFlac(l) === wantLossless);
-      if (idx >= 0) {
-        hls.currentLevel = idx;
-      } else if (wantLossless) {
-        setNotice("This browser can't decode FLAC, so the AAC stream is used instead.");
-      }
-      if (resume) {
-        hls.startLoad(-1);
-        audio.play().catch(() => setStatus('paused'));
-      }
-    });
-    hls.on(Hls.Events.LEVEL_SWITCHED, (_e, data) => {
-      const level = hls.levels[data.level];
-      if (level) setInfo({ codec: isFlac(level) ? 'FLAC' : 'AAC', lossless: isFlac(level) });
-    });
-    hls.on(Hls.Events.ERROR, (_e, data) => {
-      if (!data.fatal) return;
-      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-        setStatus('buffering');
-        retry = setTimeout(() => hls.startLoad(-1), 3000);
-      } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-        hls.recoverMediaError();
-      } else {
-        setStatus('error');
-        setNotice(`Playback failed: ${data.details}`);
-      }
-    });
-
-    hls.loadSource(STREAM_URL);
-    hls.attachMedia(audio);
-    return () => {
-      clearTimeout(retry);
-      hls.destroy();
-      hlsRef.current = null;
-    };
-  }, [mode, quality]);
-
-  useEffect(() => {
-    if (mode === 'native' && audioRef.current) {
-      audioRef.current.src = STREAM_URL;
-      setInfo({ codec: 'Automatic (native HLS)', lossless: false });
-    }
-  }, [mode]);
-
-  useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: track?.title || 'radiozk live',
-      artist: track?.artist || 'Lossless radio',
-      album: track?.album ?? '',
-      artwork: track ? [{ src: track.coverUrl }] : [],
-    });
-  }, [track]);
-
-  function togglePlay() {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (!audio.paused) {
-      audio.pause();
-      return;
-    }
-    setStatus('buffering');
-    if (mode === 'native') {
-      audio.src = STREAM_URL; // reload so playback resumes at the live edge, not where we paused
-      audio.load();
-    } else {
-      hlsRef.current?.startLoad(-1);
-    }
-    audio.play().catch((e: Error) => {
-      setStatus('error');
-      setNotice(`Playback failed: ${e.message}`);
-    });
-  }
-
-  function changeQuality(q: Quality) {
-    resumeRef.current = !!audioRef.current && !audioRef.current.paused;
-    if (resumeRef.current) setStatus('buffering');
-    setQuality(q);
-  }
+  }, [audioRef, volume]);
 
   const label = { idle: 'Ready', buffering: 'Buffering…', playing: 'Live', paused: 'Paused', error: 'Error' }[status];
 
@@ -139,19 +20,7 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <audio
-        ref={audioRef}
-        onPlaying={() => setStatus('playing')}
-        onPause={() => {
-          hlsRef.current?.stopLoad();
-          setStatus((s) => (s === 'error' ? s : 'paused'));
-        }}
-        onWaiting={() => setStatus((s) => (s === 'playing' ? 'buffering' : s))}
-        onError={() => {
-          setStatus('error');
-          setNotice('The audio element reported an error.');
-        }}
-      />
+      <audio ref={audioRef} {...audioProps} />
 
       <div className="flex items-center gap-4">
         <button

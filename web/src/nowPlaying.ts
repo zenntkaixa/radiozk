@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
+import { COVER_URL, METADATA_URL } from './config.ts';
 
-const BASE = 'https://d3d4yli4hf5bmh.cloudfront.net';
-const METADATA_URL = `${BASE}/metadatav2.json`;
 const POLL_MS = 10_000; // the server caches the file for 10s
 
 export interface Track {
@@ -40,7 +39,7 @@ export function parse(raw: Record<string, unknown>): NowPlaying {
     sampleRate: num(raw.sample_rate),
     previous,
     // cover.jpg is overwritten in place, so key the URL on the track to bypass the browser cache
-    coverUrl: `${BASE}/cover.jpg?t=${encodeURIComponent(`${artist}|${title}`)}`,
+    coverUrl: `${COVER_URL}?t=${encodeURIComponent(`${artist}|${title}`)}`,
   };
 }
 
