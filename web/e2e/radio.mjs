@@ -18,9 +18,12 @@ page.on('console', (m) => m.type() === 'error' && problems.push(`console: ${m.te
 page.on('requestfailed', (r) => problems.push(`requestfailed: ${r.url()} ${r.failure()?.errorText}`));
 
 try {
+  await page.goto(base);
+  await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 });
+  check('home page is the radio player', true);
   await page.goto(`${base}/radio`);
   await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 });
-  check('radio page renders', true);
+  check('/radio redirects to /', new URL(page.url()).pathname === '/', page.url());
 
   const caps = await page.evaluate(() => ({
     mse: typeof MediaSource !== 'undefined',

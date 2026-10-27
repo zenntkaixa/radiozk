@@ -9,18 +9,6 @@ app.get('/api/health', async (_req, res) => {
   res.json({ ok: true, ...rows[0] });
 });
 
-app.get('/api/notes', async (_req, res) => {
-  const { rows } = await pool.query('select * from notes order by id desc limit 50');
-  res.json(rows);
-});
-
-app.post('/api/notes', async (req, res) => {
-  const body = String(req.body?.body ?? '').trim();
-  if (!body) return res.status(400).json({ error: 'body is required' });
-  const { rows } = await pool.query('insert into notes (body) values ($1) returning *', [body]);
-  res.status(201).json(rows[0]);
-});
-
 // --- Track ratings -------------------------------------------------------
 // Listeners are anonymous: the browser keeps a random UUID and sends it as X-Listener-Id.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

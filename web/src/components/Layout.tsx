@@ -9,8 +9,7 @@ export default function Layout() {
       <header className="border-b border-slate-200 bg-white">
         <nav className="mx-auto flex max-w-2xl items-center gap-6 px-4 py-4">
           <span className="text-lg font-bold">radiozk</span>
-          <NavLink to="/" end className={link}>Home</NavLink>
-          <NavLink to="/radio" className={link}>Radio</NavLink>
+          <NavLink to="/" end className={link}>Radio</NavLink>
           <NavLink to="/about" className={link}>About</NavLink>
         </nav>
       </header>

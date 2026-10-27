@@ -5,12 +5,6 @@ export const pool = new pg.Pool({
 });
 
 export async function migrate() {
-  await pool.query(`
-    create table if not exists notes (
-      id serial primary key,
-      body text not null,
-      created_at timestamptz not null default now()
-    )`);
   // One vote per listener per track; track_key is the normalized "artist|title".
   await pool.query(`
     create table if not exists ratings (

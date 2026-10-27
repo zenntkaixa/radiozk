@@ -51,7 +51,7 @@ browser ──> nginx :8080 ──> static files from www/     (SPA fallback to 
 dev:  browser ──> Vite :5173 ──(proxies /api)──> Node :3000
 ```
 
-- `web/` — Vite + React 19 + TypeScript + Tailwind v4 + React Router. `vite build` writes to `../www/` (generated and git-ignored; never edit it). The Radio page is lazy-loaded so `hls.js` (~500 kB) stays out of the main bundle. Imports use explicit `.ts`/`.tsx` extensions (`allowImportingTsExtensions`).
+- `web/` — Vite + React 19 + TypeScript + Tailwind v4 + React Router. `vite build` writes to `../www/` (generated and git-ignored; never edit it). The Radio page is the home page (`/`; `/radio` redirects there) and is lazy-loaded so `hls.js` (~500 kB) stays out of the main bundle. Imports use explicit `.ts`/`.tsx` extensions (`allowImportingTsExtensions`).
 - `app/` — Express (ES modules). `src/db.js` owns the pg pool and `migrate()`, which runs `create table if not exists` on every startup; there is no migration tool, so schema changes must be written idempotently there. `src/server.js` holds all routes.
 - `dev/nginx/nginx.conf` is a template; `bin/start.sh` fills in the mime-types and root paths and writes `nginx.generated.conf` (ignored). nginx logs, temp dirs and `dev/pgdata/` are runtime state and ignored.
 
