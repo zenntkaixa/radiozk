@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { NowPlaying as NowPlayingData } from '../nowPlaying.ts';
+import RatingButtons from './RatingButtons.tsx';
 
 function quality(d: NowPlayingData) {
   if (!d.bitDepth || !d.sampleRate) return null;
@@ -48,6 +49,8 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
           )}
         </div>
       </div>
+
+      {data.title && <RatingButtons artist={data.artist} title={data.title} />}
 
       {data.previous.length > 0 && (
         <>
