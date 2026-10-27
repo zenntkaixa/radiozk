@@ -12,14 +12,12 @@ if ! psql -U postgres -d postgres -tAc "select 1 from pg_roles where rolname='ra
 fi
 # nginx
 MIME=$(ls "$LOCAL_ROOT"/etc/nginx/mime.types)
-sed -e "s|MIMETYPES|$MIME|" -e "s|WWWROOT|$PROJECT/www|" -e "s|listen 127.0.0.1:8080|listen 127.0.0.1:$NGINX_PORT|" \
+sed -e "s|MIMETYPES|$MIME|" -e "s|WWWROOT|$PROJECT/www|" -e "s|NGINX_PORT|$NGINX_PORT|" -e "s|APP_PORT|$APP_PORT|" \
   "$PROJECT/dev/nginx/nginx.conf" > "$PROJECT/dev/nginx/nginx.generated.conf"
-# The pid file survives reboots, so confirm the pid is really nginx before signalling it.
-NGINX_PID=$(cat "$PROJECT/dev/nginx/logs/nginx.pid" 2>/dev/null || true)
-if [ -n "$NGINX_PID" ] && [ "$(cat "/proc/$NGINX_PID/comm" 2>/dev/null)" = nginx ]; then
-  nginx -p "$PROJECT/dev/nginx" -c nginx.generated.conf -s reload
+if nginx_running; then
+  nginx_ctl -s reload
 else
-  nginx -p "$PROJECT/dev/nginx" -c nginx.generated.conf -e "$PROJECT/dev/nginx/logs/error.log"
+  nginx_ctl -e "$PROJECT/dev/nginx/logs/error.log"
 fi
 echo "web:      http://localhost:$NGINX_PORT"
 echo "database: postgresql://radiozk:radiozk@127.0.0.1:$PGPORT/radiozk"

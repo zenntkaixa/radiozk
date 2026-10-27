@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     port: 5173,
-    proxy: { '/api': 'http://127.0.0.1:3000' },
+    proxy: { '/api': `http://127.0.0.1:${process.env.APP_PORT ?? 3000}` }, // APP_PORT is exported by bin/env.sh
   },
   build: { outDir: '../www', emptyOutDir: true },
 });

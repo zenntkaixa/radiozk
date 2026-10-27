@@ -12,3 +12,13 @@ export PGDATABASE=radiozk
 export PGPASSWORD=radiozk
 export NGINX_PORT=8080
 export APP_PORT=3000
+
+# --- nginx helpers (shared by start.sh and stop.sh) ---
+nginx_ctl() { nginx -p "$PROJECT/dev/nginx" -c nginx.generated.conf "$@"; }
+# The pid file survives reboots, so a stale pid may belong to an unrelated process.
+# Only treat nginx as running (and safe to signal) if that pid is really an nginx process.
+nginx_running() {
+  local pid
+  pid=$(cat "$PROJECT/dev/nginx/logs/nginx.pid" 2>/dev/null) || return 1
+  [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = nginx ]
+}

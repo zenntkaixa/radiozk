@@ -37,7 +37,7 @@ There is no linter. Checks available:
 
 Playwright MCP: a `playwright` MCP server (`@playwright/mcp@0.0.83`, Firefox, headless) is registered in the user's local Claude config (not in the repo; re-add with `claude mcp add playwright --scope local ...`, see `claude mcp get playwright`). Its Playwright version needs Firefox build 1553, separate from the 1555 build used by `npm run e2e`; both live in `~/.cache/ms-playwright`. Its snapshots/screenshots go to `dev/playwright-mcp/` (ignored). Tools appear after a Claude Code restart.
 
-Ports: nginx 8080, Node API 3000, Vite 5173, PostgreSQL 5433 (DB/user/password all `radiozk`, localhost only).
+Ports: nginx 8080, Node API 3000, Vite 5173, PostgreSQL 5433 (DB/user/password all `radiozk`, localhost only). `NGINX_PORT`/`APP_PORT`/`PG*` are defined once in `bin/env.sh`: `start.sh` templates them into the nginx config and the Vite proxy reads `APP_PORT`. The e2e default URL and the API tests' port 3100 are separate.
 
 On first play the stream rebuffers for ~2 s before settling at real time (status briefly flips Live → Buffering…); the e2e test allows for it. The live media timeline doesn't start at 0, so judge playback by elapsed `currentTime`, not its absolute value.
 
@@ -52,8 +52,8 @@ dev:  browser ──> Vite :5173 ──(proxies /api)──> Node :3000
 ```
 
 - `web/` — Vite + React 19 + TypeScript + Tailwind v4 + React Router. `vite build` writes to `../www/` (generated and git-ignored; never edit it). The Radio page is the home page (`/`; `/radio` redirects there) and is lazy-loaded so `hls.js` (~500 kB) stays out of the main bundle. Imports use explicit `.ts`/`.tsx` extensions (`allowImportingTsExtensions`).
-- `app/` — Express (ES modules). `src/db.js` owns the pg pool and `migrate()`, which runs `create table if not exists` on every startup; there is no migration tool, so schema changes must be written idempotently there. `src/server.js` holds all routes.
-- `dev/nginx/nginx.conf` is a template; `bin/start.sh` fills in the mime-types and root paths and writes `nginx.generated.conf` (ignored). nginx logs, temp dirs and `dev/pgdata/` are runtime state and ignored.
+- `app/` — Express (ES modules). `src/db.js` owns the pg pool and `migrate()`, which runs `create table if not exists` on every startup; there is no migration tool, so schema changes must be written idempotently there. `src/server.js` wires up the app and `/api/health`; feature routes live in `src/routes/` (currently only `ratings.js`, mounted at `/api/ratings`).
+- `dev/nginx/nginx.conf` is a template; `bin/start.sh` fills in the mime-types, root path and both ports and writes `nginx.generated.conf` (ignored). nginx logs, temp dirs and `dev/pgdata/` are runtime state and ignored.
 
 ### The stream and metadata (external, read-only)
 
@@ -71,7 +71,7 @@ Thumbs up/down per track, stored in our own `ratings` table (primary key `(track
 
 ## Gotchas
 
-- `bin/start.sh` / `bin/stop.sh` verify via `/proc/<pid>/comm` that the pid in nginx's pid file is really nginx before signalling it. After a reboot the stale pid can belong to an unrelated process; an earlier version signalled it. Keep that check.
+- `nginx_running` / `nginx_ctl` in `bin/env.sh` (used by `start.sh` and `stop.sh`) verify via `/proc/<pid>/comm` that the pid in nginx's pid file is really nginx before signalling it. After a reboot the stale pid can belong to an unrelated process; an earlier version signalled it. Never signal the pid file's pid without that check.
 - The Radio Calico stream and site belong to a third party. Don't call their `wp-json/ThumbsRatings/v1/ratings` endpoint (it writes to their system), and don't probe their hosts beyond what they publish.
 - `RadioCalico*.png`, `RadioCalicoStyle.zip`, `RadioCalico_Style_Guide.txt` and `stream_URL.txt` in the repo root are the user's brand assets, intentionally **untracked**; don't `git add -A` them. The style guide (palette, typography) has not been applied to the UI yet.
 - Git identity comes from `~/.gitconfig`; `origin` is `git@github.com:zenntkaixa/radiozk.git` over SSH, branch `main`. Commits end with the `Co-Authored-By` trailer given in the session's attribution reminder.
