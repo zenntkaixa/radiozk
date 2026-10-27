@@ -28,11 +28,14 @@ Shell state does not persist between tool calls, so source it in the same comman
 | Type check only | `cd web && npm run typecheck` |
 | SQL shell | `bin/psql.sh` (e.g. `bin/psql.sh -c '\dt'`) |
 
-There is no linter and no unit-test suite. Checks available:
+There is no linter. Checks available:
 
 - Type check (runs as part of the build).
+- `bin/test.sh` — unit/API tests with Node's built-in runner (`node:test`): `app/test/ratings.test.js` (15 black-box tests; spawns the real server on port 3100 against a throwaway `radiozk_test` database, so PostgreSQL must be running) and `web/test/nowPlaying.test.mjs` (8 tests of the metadata `parse()`; Node strips the TS types). Run one suite with `npm test` in `app/` or `web/`; one test with `node --test --test-name-pattern='<text>' 'test/*.test.js'`. The API tests are written against HTTP only, so they should survive refactors of `server.js`.
 - `cd web && npm run e2e` — Playwright script `web/e2e/radio.mjs` that drives headless Firefox against http://localhost:8080 (override with an argument): page render, FLAC/AAC playback advancing in real time, ratings, routing. Needs nginx, Postgres and the API running (`bin/start.sh` + `bin/app.sh`) and the current build in `www/` (`bin/build.sh`). It casts real votes, so run `bin/psql.sh -c 'truncate ratings'` afterwards. Uses Playwright's bundled Firefox (`~/.cache/ms-playwright`), not the system one; there is no audio device, so it proves decoding/advancing, not audible output.
 - Otherwise verify by building and hitting endpoints with `curl`.
+
+Playwright MCP: a `playwright` MCP server (`@playwright/mcp@0.0.83`, Firefox, headless) is registered in the user's local Claude config (not in the repo; re-add with `claude mcp add playwright --scope local ...`, see `claude mcp get playwright`). Its Playwright version needs Firefox build 1553, separate from the 1555 build used by `npm run e2e`; both live in `~/.cache/ms-playwright`. Its snapshots/screenshots go to `dev/playwright-mcp/` (ignored). Tools appear after a Claude Code restart.
 
 Ports: nginx 8080, Node API 3000, Vite 5173, PostgreSQL 5433 (DB/user/password all `radiozk`, localhost only).
 

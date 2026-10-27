@@ -24,3 +24,7 @@ www/
 # Misc
 *.log
 .DS_Store
+
+# Playwright MCP snapshots/screenshots
+dev/playwright-mcp/
+.playwright-mcp/
