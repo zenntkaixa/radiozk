@@ -12,7 +12,3 @@ export PGDATABASE=radiozk
 export PGPASSWORD=radiozk
 export NGINX_PORT=8080
 export APP_PORT=3000
-export GIT_EXEC_PATH="$LOCAL_ROOT/usr/lib/git-core"
-export GIT_TEMPLATE_DIR="$LOCAL_ROOT/usr/share/git-core/templates"
-export PATH="$PATH:$LOCAL_ROOT/usr/bin"  # last: its psql/pg_* wrappers must not shadow the real ones
-export MANPATH="$LOCAL_ROOT/usr/share/man${MANPATH:+:$MANPATH}"
