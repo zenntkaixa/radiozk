@@ -28,9 +28,15 @@ Shell state does not persist between tool calls, so source it in the same comman
 | Type check only | `cd web && npm run typecheck` |
 | SQL shell | `bin/psql.sh` (e.g. `bin/psql.sh -c '\dt'`) |
 
-There are **no tests and no linter**; the type check (run as part of the build) is the only automated check. Verify changes by building and hitting the endpoints with `curl`.
+There is no linter and no unit-test suite. Checks available:
+
+- Type check (runs as part of the build).
+- `cd web && npm run e2e` — Playwright script `web/e2e/radio.mjs` that drives headless Firefox against http://localhost:8080 (override with an argument): page render, FLAC/AAC playback advancing in real time, ratings, routing. Needs nginx, Postgres and the API running (`bin/start.sh` + `bin/app.sh`) and the current build in `www/` (`bin/build.sh`). It casts real votes, so run `bin/psql.sh -c 'truncate ratings'` afterwards. Uses Playwright's bundled Firefox (`~/.cache/ms-playwright`), not the system one; there is no audio device, so it proves decoding/advancing, not audible output.
+- Otherwise verify by building and hitting endpoints with `curl`.
 
 Ports: nginx 8080, Node API 3000, Vite 5173, PostgreSQL 5433 (DB/user/password all `radiozk`, localhost only).
+
+On first play the stream rebuffers for ~2 s before settling at real time (status briefly flips Live → Buffering…); the e2e test allows for it. The live media timeline doesn't start at 0, so judge playback by elapsed `currentTime`, not its absolute value.
 
 Background servers: run `bin/app.sh` with `nohup ... > dev/app.log 2>&1 &`, and kill by pid or an anchored pattern; a plain `pkill -f` pattern can match your own shell command.
 
