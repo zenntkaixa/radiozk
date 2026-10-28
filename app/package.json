@@ -5,6 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test 'test/*.test.js'",
+    "test:unit": "node --test 'test/validate.test.js'",
+    "test:api": "node --test 'test/ratings.test.js'",
+    "test:coverage": "node --test --experimental-test-coverage 'test/*.test.js'",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
   },

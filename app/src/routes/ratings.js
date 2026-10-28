@@ -1,25 +1,15 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
-
-// Listeners are anonymous: the browser keeps a random UUID and sends it as X-Listener-Id.
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const norm = (v) => String(v ?? '').replace(/\s+/g, ' ').trim();
+import { parseTrackRequest, isRatingValue } from '../validate.js';
 
 /** Validates the request and returns { listener, artist, title, key }, or sends a 400 and returns null. */
 function parseRequest(req, res) {
-  const source = req.method === 'GET' ? req.query : req.body;
-  const listener = String(req.get('x-listener-id') ?? '');
-  const artist = norm(source?.artist);
-  const title = norm(source?.title);
-  if (!UUID_RE.test(listener)) {
-    res.status(400).json({ error: 'valid X-Listener-Id header required' });
+  const parsed = parseTrackRequest(req.get('x-listener-id'), req.method === 'GET' ? req.query : req.body);
+  if (parsed.error) {
+    res.status(400).json({ error: parsed.error });
     return null;
   }
-  if (!title || artist.length > 200 || title.length > 300) {
-    res.status(400).json({ error: 'artist/title invalid' });
-    return null;
-  }
-  return { listener, artist, title, key: `${artist}|${title}`.toLowerCase() };
+  return parsed;
 }
 
 async function summary(key, listener) {
@@ -46,7 +36,7 @@ router.post('/', async (req, res) => {
   const ctx = parseRequest(req, res);
   if (!ctx) return;
   const value = req.body?.value;
-  if (![1, -1, 0].includes(value)) return res.status(400).json({ error: 'value must be 1, -1 or 0' });
+  if (!isRatingValue(value)) return res.status(400).json({ error: 'value must be 1, -1 or 0' });
   if (value === 0) {
     await pool.query('delete from ratings where track_key = $1 and listener_id = $2', [ctx.key, ctx.listener]);
   } else {
