@@ -19,7 +19,7 @@ It is a development prototype, not a production service. Everything runs as the 
 | API | Node.js 24, Express 5, `pg` |
 | Database | PostgreSQL 18 |
 | Web server | nginx (static files + `/api` reverse proxy) |
-| Tests | `node:test` (API and parser), Playwright + Firefox (end-to-end) |
+| Tests | `node:test` (API, validation, parser), Vitest + Testing Library (UI), Playwright + Firefox (end-to-end), GitHub Actions CI |
 
 ## Architecture
 
@@ -94,7 +94,11 @@ Stop the database and web server with `bin/stop.sh`.
 
 ## Testing
 
-- `bin/test.sh` runs the API tests (black-box over HTTP; they spawn the real server on port 3100 against a throwaway `radiozk_test` database, so PostgreSQL must be running) and the metadata parser tests.
+- `bin/test.sh` runs everything except the browser e2e test:
+  - backend (`app/`): pure unit tests of the request validation, plus black-box API tests that spawn the real server on port 3100 against a throwaway `radiozk_test` database (PostgreSQL must be running);
+  - frontend (`web/`): metadata parser tests and Vitest + Testing Library tests of the rating UI (`RatingButtons`, `api.ts`, `listenerId.ts`).
+- Each suite has its own script: `npm run test:unit` / `test:api` in `app/`, `npm run test:parser` / `test:ui` in `web/`.
+- GitHub Actions (`.github/workflows/test.yml`) type-checks, builds and runs these suites on every push to `main` and on pull requests, against a Postgres service container.
 - `npm run e2e` (in `web/`) drives headless Firefox through Playwright against <http://localhost:8080>: page render, FLAC and AAC playback, ratings, routing. It needs nginx, PostgreSQL and the API running, plus a current build in `www/`. It casts real votes, so clean up afterwards:
 
   ```sh
