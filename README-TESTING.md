@@ -14,7 +14,7 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 
 Current counts: 28 backend (10 unit + 18 API), 8 parser, 28 UI, 18 e2e checks.
 
-The first four layers run in CI. The e2e layer does not: it needs the real stream and a full local stack.
+The first four layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
 ## Running the tests
 
@@ -100,10 +100,16 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 
 `.github/workflows/test.yml` runs on pushes to `main` and on pull requests:
 
+The workflow has two jobs. `test`:
+
 1. `npm ci` in `app/` and `web/`
 2. `npm run build` in `web/` (type check, which includes the tests, plus the production build)
 3. `npm test` in `app/`, against a `postgres:18` service container
 4. `npm test` in `web/`
+
+`docker` runs `bin/docker-smoke.sh`.
+
+Inside the dev containers the same suites run with `docker compose -f compose.dev.yaml exec api npm test` and `... exec web npm test`.
 
 The other two workflows in `.github/workflows/` belong to the Claude GitHub App (PR assistant and code review) and don't run the test suites.
 

@@ -1,0 +1,47 @@
+# Development release: Vite HMR + node --watch against a local PostgreSQL, source bind-mounted.
+#   docker compose -f compose.dev.yaml up --build
+# Front end http://localhost:5173, API http://localhost:3000, PostgreSQL localhost:5433 (all loopback only).
+# After changing package.json / package-lock.json: add --build -V (-V renews the node_modules volumes).
+name: radiozk-dev
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: radiozk
+      POSTGRES_PASSWORD: radiozk
+      POSTGRES_DB: radiozk
+    ports: ["127.0.0.1:5433:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U radiozk -d radiozk"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: { context: ., target: dev-api }
+    image: radiozk-dev-api
+    environment:
+      DATABASE_URL: postgresql://radiozk:radiozk@db:5432/radiozk
+      ADMIN_DATABASE_URL: postgresql://radiozk:radiozk@db:5432/radiozk   # for the API tests
+    ports: ["127.0.0.1:3000:3000"]
+    volumes:
+      - ./app:/srv/app
+      - /srv/app/node_modules
+    depends_on:
+      db: { condition: service_healthy }
+
+  web:
+    build: { context: ., target: dev-web }
+    image: radiozk-dev-web
+    ports: ["127.0.0.1:5173:5173"]
+    volumes:
+      - ./web:/srv/web
+      - /srv/web/node_modules
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

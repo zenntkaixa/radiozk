@@ -46,3 +46,11 @@ jobs:
       - name: Frontend parser and UI tests
         run: npm test
         working-directory: web
+
+  docker:
+    name: docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and smoke-test the production images
+        run: bin/docker-smoke.sh
