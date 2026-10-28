@@ -79,6 +79,38 @@ Stop the database and web server with `bin/stop.sh`.
 | Vite dev server | 5173 |
 | PostgreSQL | 5433 (database, user and password all `radiozk`, localhost only) |
 
+## Docker
+
+The project also ships as containers, so it can run without the `.local/` toolchain. There are two releases:
+
+| | Production (`compose.yaml`) | Development (`compose.dev.yaml`) |
+|---|---|---|
+| Services | PostgreSQL 18, API (Node 24, non-root, read-only filesystem), nginx serving the built front end and proxying `/api` | PostgreSQL 18, API with `node --watch`, Vite dev server with HMR |
+| Source | baked into the images | bind-mounted from `app/` and `web/` |
+| Published | web only, on `127.0.0.1:8080` | web 5173, API 3000, PostgreSQL 5433 (all on loopback) |
+| Data | named volume `pgdata` | named volume `pgdata` |
+
+**Production**
+
+```sh
+cp .env.example .env          # set POSTGRES_PASSWORD
+docker compose up -d --build
+```
+
+Open <http://localhost:8080>. In `.env`, `WEB_BIND=0.0.0.0` exposes it on every interface (put a TLS proxy in front; the app has no TLS or auth), `WEB_PORT` changes the port, and `TAG` tags the `radiozk-api` / `radiozk-web` images (e.g. a release version). `docker compose down` keeps the data; `down -v` deletes it.
+
+**Development**
+
+```sh
+docker compose -f compose.dev.yaml up --build
+docker compose -f compose.dev.yaml exec api npm test   # API tests against the container's database
+docker compose -f compose.dev.yaml exec web npm test
+```
+
+After changing `package.json` or a lockfile, add `--build -V` so the `node_modules` volumes are renewed. Port 5433 clashes with the rootless PostgreSQL from `bin/start.sh`; stop one of them.
+
+`bin/docker-smoke.sh` builds the production images, starts them on a throwaway project, checks the endpoints, a vote round trip and recovery after a database restart, then tears everything down. CI runs it.
+
 ## Scripts
 
 | Task | Command |
