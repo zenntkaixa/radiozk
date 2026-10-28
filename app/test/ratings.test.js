@@ -2,41 +2,18 @@
 // Needs PostgreSQL running (bin/start.sh). Run: npm test (in app/) or bin/test.sh.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import pg from 'pg';
-
-const PORT = 3100;
-const BASE = `http://127.0.0.1:${PORT}`;
-const ADMIN_URL = process.env.ADMIN_DATABASE_URL ?? 'postgresql://radiozk:radiozk@127.0.0.1:5433/radiozk';
-const TEST_DB = 'radiozk_test';
-const TEST_URL = ADMIN_URL.replace(/\/[^/]+$/, `/${TEST_DB}`);
+import { startTestServer } from './helpers.js';
 
 let server;
+let BASE;
 
 before(async () => {
-  const admin = new pg.Client({ connectionString: ADMIN_URL });
-  await admin.connect();
-  const { rowCount } = await admin.query('select 1 from pg_database where datname = $1', [TEST_DB]);
-  if (!rowCount) await admin.query(`create database ${TEST_DB}`);
-  await admin.end();
-
-  server = spawn(process.execPath, ['src/server.js'], {
-    env: { ...process.env, DATABASE_URL: TEST_URL, APP_PORT: String(PORT) },
-    stdio: ['ignore', 'ignore', 'inherit'],
-  });
-  for (let i = 0; i < 50; i++) {
-    try {
-      if ((await fetch(`${BASE}/api/health`)).ok) return;
-    } catch {
-      /* not up yet */
-    }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw new Error('server did not start');
+  server = await startTestServer({ port: 3100, db: 'radiozk_test' });
+  BASE = server.base;
 });
 
-after(() => server?.kill());
+after(() => server?.stop());
 
 const get = (listener, artist, title) =>
   fetch(`${BASE}/api/ratings?${new URLSearchParams({ artist, title })}`, {

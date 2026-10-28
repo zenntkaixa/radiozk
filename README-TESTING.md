@@ -8,11 +8,12 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 |---|---|---|---|---|
 | Backend unit | `app/test/validate.test.js` | `node:test` | nothing | milliseconds |
 | Backend API (integration) | `app/test/ratings.test.js` | `node:test` | PostgreSQL | seconds |
+| Backend security | `app/test/security.test.js` | `node:test` | PostgreSQL | seconds |
 | Frontend parser | `web/test/nowPlaying.test.mjs` | `node:test` | nothing | milliseconds |
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 28 backend (10 unit + 18 API), 8 parser, 28 UI, 18 e2e checks.
+Current counts: 42 backend (11 unit + 18 API + 13 security), 8 parser, 28 UI, 18 e2e checks.
 
 The first four layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
@@ -32,6 +33,9 @@ Individual suites:
 | Backend, all | `cd app && npm test` |
 | Backend unit only (no DB) | `cd app && npm run test:unit` |
 | Backend API only | `cd app && npm run test:api` |
+| Backend security tests only | `cd app && npm run test:security` (or `make security-tests`) |
+| Dependency audit | `make audit` (or `bin/audit.sh`) |
+| Audit + security tests | `make security` |
 | Backend coverage report | `cd app && npm run test:coverage` |
 | Frontend, all (parser + UI) | `cd web && npm test` |
 | Frontend parser only | `cd web && npm run test:parser` |
@@ -111,7 +115,25 @@ The workflow has two jobs. `test`:
 
 Inside the dev containers the same suites run with `docker compose -f compose.dev.yaml exec api npm test` and `... exec web npm test`.
 
-The other two workflows in `.github/workflows/` belong to the Claude GitHub App (PR assistant and code review) and don't run the test suites.
+`security.yml` runs the dependency audit (see Security checks). The other two workflows in `.github/workflows/` belong to the Claude GitHub App (PR assistant and code review) and don't run the test suites.
+
+## Security checks
+
+`make security` runs the dependency audit and the security tests. `make` with no target lists all targets.
+
+**Dependency audit** (`bin/audit.sh`): `npm audit` in `app/` and `web/`, dev dependencies included. It fails on **high** and critical advisories; lower severities are printed but don't fail. `AUDIT_LEVEL=moderate make audit` tightens it. CI runs it (`.github/workflows/security.yml`) on pushes to `main` and `develop`, on pull requests, and every Monday, because new advisories appear without any code change. Dependabot (`.github/dependabot.yml`) opens weekly PRs against `develop` for npm, Docker base images and GitHub Actions.
+
+**Security tests** (`app/test/security.test.js`, on its own port and database so it runs in parallel with the API tests) cover:
+
+- no `X-Powered-By` header and no CORS headers
+- malformed JSON gives 400 and an oversized body gives 413, with no stack traces or internals in any error
+- wrong content types, non-string `artist`/`title` (objects, arrays, numbers) and repeated query parameters are rejected, not coerced
+- SQL injection payloads in `artist`, `title` and the listener-id header are treated as data, and the table survives
+- one listener can't read or clear another listener's vote
+
+**Known, accepted gaps.** There is no rate limiting, and a vote is tied only to a random id the client chooses (no IP or fingerprint binding). This was discussed and postponed. Two tests named `KNOWN GAP` pin today's behaviour: one listener can rate many tracks without throttling, and unlimited fresh listener ids can inflate one track's count. If you add rate limiting, those tests will fail: change them to assert the new protection and remove the gap from this list.
+
+Not covered: image scanning (Trivy), static analysis (CodeQL), HTTP security headers on nginx (CSP, `X-Content-Type-Options`, etc.), and TLS, which the Docker setup leaves to a proxy in front.
 
 ## Known gaps
 

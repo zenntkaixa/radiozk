@@ -121,7 +121,8 @@ After changing `package.json` or a lockfile, add `--build -V` so the `node_modul
 | Production build | `bin/build.sh` |
 | Type check | `cd web && npm run typecheck` |
 | SQL shell | `bin/psql.sh` |
-| Unit and API tests | `bin/test.sh` |
+| Unit and API tests | `bin/test.sh` (or `make test`) |
+| Dependency audit + security tests | `make security` |
 | End-to-end tests | `cd web && npm run e2e` |
 
 ## Testing
