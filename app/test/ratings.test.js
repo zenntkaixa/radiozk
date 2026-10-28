@@ -166,3 +166,27 @@ test('SQL metacharacters in artist/title are stored as data', async () => {
   assert.equal((await vote(me, "O'Brien", title, 1)).status, 200);
   assert.deepEqual(await (await get(me, "O'Brien", title)).json(), { up: 1, down: 0, mine: 1 });
 });
+
+test('concurrent votes from one listener leave exactly one vote', async () => {
+  const t = track();
+  const me = randomUUID();
+  const results = await Promise.all(
+    [1, -1, 1, -1, 1, -1, 1, -1].map((v) => vote(me, t.artist, t.title, v)),
+  );
+  assert.ok(results.every((r) => r.status === 200));
+  const final = await (await get(me, t.artist, t.title)).json();
+  assert.equal(final.up + final.down, 1);
+  assert.equal(final.mine, final.up ? 1 : -1);
+});
+
+test('concurrent votes from many listeners are all counted', async () => {
+  const t = track();
+  await Promise.all(Array.from({ length: 20 }, (_, i) => vote(randomUUID(), t.artist, t.title, i % 4 === 0 ? -1 : 1)));
+  assert.deepEqual(await (await get(randomUUID(), t.artist, t.title)).json(), { up: 15, down: 5, mine: 0 });
+});
+
+test('another listener\'s vote never shows up as mine', async () => {
+  const t = track();
+  await vote(randomUUID(), t.artist, t.title, -1);
+  assert.equal((await (await get(randomUUID(), t.artist, t.title)).json()).mine, 0);
+});
