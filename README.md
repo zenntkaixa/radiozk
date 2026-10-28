@@ -94,6 +94,8 @@ Stop the database and web server with `bin/stop.sh`.
 
 ## Testing
 
+Full details are in [README-TESTING.md](README-TESTING.md); in short:
+
 - `bin/test.sh` runs everything except the browser e2e test:
   - backend (`app/`): pure unit tests of the request validation, plus black-box API tests that spawn the real server on port 3100 against a throwaway `radiozk_test` database (PostgreSQL must be running);
   - frontend (`web/`): metadata parser tests and Vitest + Testing Library tests of the rating UI (`RatingButtons`, `api.ts`, `listenerId.ts`).
