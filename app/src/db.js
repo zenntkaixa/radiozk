@@ -4,6 +4,10 @@ export const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL ?? 'postgresql://radiozk:radiozk@127.0.0.1:5433/radiozk',
 });
 
+// An idle client errors when PostgreSQL restarts; without a listener that event kills the process.
+// The pool discards the broken client and connects again on the next query.
+pool.on('error', (err) => console.error('idle database client error:', err.message));
+
 export async function migrate() {
   // One vote per listener per track; track_key is the normalized "artist|title".
   await pool.query(`
