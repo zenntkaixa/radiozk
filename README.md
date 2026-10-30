@@ -29,6 +29,55 @@ browser ──> nginx :8080 ──> static files from www/     (SPA fallback to 
 dev:  browser ──> Vite :5173 ──(proxies /api)──> Node :3000
 ```
 
+The same system as a diagram (rendered by GitHub):
+
+```mermaid
+flowchart LR
+    subgraph Browser["Browser (listener)"]
+        SPA["React SPA<br/>Vite · TS · Tailwind · React Router"]
+        HLS["hls.js/light<br/>(lazy chunk, ~114 KB gz)<br/>Safari/iOS: native HLS"]
+        LS[("localStorage<br/>anonymous listener UUID")]
+        SPA -- "loads on idle or on Play" --> HLS
+        SPA --- LS
+    end
+
+    subgraph Host["Host: .local toolchain, or Docker production stack (compose.yaml)"]
+        NGINX["nginx :8080<br/>static files from www/<br/>SPA fallback · gzip 6<br/>/favicon.ico → 204"]
+        API["Node API :3000<br/>Express 5<br/>/api/health · /api/ratings"]
+        DB[("PostgreSQL 18 :5433<br/>ratings table<br/>PK track_key + listener_id")]
+        NGINX -- "/api/* reverse proxy" --> API
+        API -- "pg pool" --> DB
+    end
+
+    subgraph CDN["Radio Calico CDN (third party, read-only, open CORS)<br/>d3d4yli4hf5bmh.cloudfront.net"]
+        M3U8["/hls/live.m3u8<br/>FLAC fMP4 + AAC TS variants"]
+        META["/metadatav2.json<br/>current track + 5 previous, cached 10 s"]
+        COVER["/cover.jpg<br/>current cover"]
+    end
+
+    Vite["Vite dev server :5173<br/>HMR (dev only)"]
+
+    SPA -- "HTML, JS, CSS" --> NGINX
+    SPA -- "GET/POST /api/ratings<br/>X-Listener-Id header" --> NGINX
+    SPA -- "early fetch from index.html,<br/>then poll every 10 s" --> META
+    SPA -- "img src, keyed by track" --> COVER
+    HLS -- "manifest + segments" --> M3U8
+    Vite -. "dev: proxies /api" .-> API
+    SPA -. "dev: served by" .-> Vite
+
+    subgraph CI["GitHub Actions: ci.yml"]
+        T["test<br/>typecheck, build, size budget,<br/>app + web suites"]
+        A["audit<br/>npm audit, weekly"]
+        D["docker<br/>smoke test"]
+        G["ci gate<br/>required on main"]
+        T --> G
+        A --> G
+        D --> G
+    end
+```
+
+The browser talks to the Radio Calico CDN directly for the stream, metadata and cover; only ratings go through our API. Dotted lines exist in development only.
+
 ```
 app/      Express API (src/server.js, src/db.js, src/routes/ratings.js) and its tests
 web/      Vite + React front end, parser tests, Playwright e2e script
