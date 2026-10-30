@@ -6,7 +6,7 @@ import { useRadioStream } from '../hooks/useRadioStream.ts';
 export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
   const { audioRef, audioProps, mode, quality, status, info, notice, togglePlay, changeQuality } = useRadioStream();
   const [volume, setVolume] = useState(0.8);
-  useMediaSession(track);
+  useMediaSession(track, status !== 'idle'); // idle until the first Play
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;

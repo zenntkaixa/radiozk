@@ -1,15 +1,19 @@
 import { useEffect } from 'react';
 import type { NowPlaying } from '../nowPlaying.ts';
 
-/** Keeps the OS/browser media controls (lock screen, headset keys) showing the current track. */
-export function useMediaSession(track: NowPlaying | null | undefined) {
+/**
+ * Keeps the OS/browser media controls (lock screen, headset keys) showing the current track.
+ * Pass `active` = false until the listener has started playback: setting the metadata makes the browser download
+ * the artwork straight away, a second copy of the cover that competes with the visible one on first load.
+ */
+export function useMediaSession(track: NowPlaying | null | undefined, active: boolean) {
   useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
+    if (!active || !('mediaSession' in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track?.title || 'radiozk live',
       artist: track?.artist || 'Lossless radio',
       album: track?.album ?? '',
       artwork: track ? [{ src: track.coverUrl }] : [],
     });
-  }, [track]);
+  }, [track, active]);
 }
