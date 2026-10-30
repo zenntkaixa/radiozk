@@ -6,7 +6,7 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 
 | Layer | Where | Tool | Needs | Speed |
 |---|---|---|---|---|
-| Backend unit | `app/test/validate.test.js` | `node:test` | nothing | milliseconds |
+| Backend unit | `app/test/validate.test.js`, `app/test/rateLimit.test.js` | `node:test` | nothing | milliseconds |
 | Backend API (integration) | `app/test/ratings.test.js` | `node:test` | PostgreSQL | seconds |
 | Backend security | `app/test/security.test.js` | `node:test` | PostgreSQL | seconds |
 | Frontend parser, size check | `web/test/nowPlaying.test.mjs`, `web/test/checkSize.test.mjs` | `node:test` | nothing | milliseconds |
@@ -127,7 +127,7 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 | `CodeQL` (own workflow, `codeql.yml`) | static analysis of the JavaScript/TypeScript code; results under Security > Code scanning, not part of the `ci` gate | push, PR, weekly |
 | `ci` | Gate: green only when `audit` passed and, outside the weekly run, `test` and `docker` passed too | always |
 
-The weekly run executes only `audit`, because new advisories appear without any code change; a failure there shows up as a failed run on `main`'s Actions page. Require the single `ci` check in branch protection instead of listing each job.
+The weekly run executes only `audit` and `trivy`, because new advisories appear without any code change; a failure there shows up as a failed run on `main`'s Actions page. Require the single `ci` check in branch protection instead of listing each job.
 
 Inside the dev containers the same suites run with `docker compose -f compose.dev.yaml exec api npm test` and `... exec web npm test`.
 
@@ -151,11 +151,11 @@ The other two workflows in `.github/workflows/` belong to the Claude GitHub App 
 
 **Known, accepted gap.** A vote is tied only to a random id the client chooses and to an IP address, so many distinct addresses can still inflate one track (distributed ballot stuffing). One test named `KNOWN GAP` pins that. If you add stronger protection (accounts, proof of work), that test will fail: change it to assert the new protection and remove the gap from this list.
 
-Not covered: image scanning (Trivy), static analysis (CodeQL), HTTP security headers on nginx (CSP, `X-Content-Type-Options`, etc.), and TLS, which the Docker setup leaves to a proxy in front.
+Not covered by the test suites: TLS, which the Docker setup leaves to a proxy in front. Image scanning (Trivy) and static analysis (CodeQL) run as separate CI jobs; the security headers are checked by `securityHeaders.test.ts` and the Docker smoke test.
 
 ## Known gaps
 
 - Safari/iOS native HLS playback is not tested; it needs a Mac or iPhone.
 - Audible output is not tested.
-- The playback hook (`useRadioStream`) and `NowPlaying` are covered only by the e2e script, not by unit tests.
+- The `NowPlaying` and `RadioPlayer` components are covered only by the e2e script. The hooks `useRadioStream`, `useNowPlaying` and `useMediaSession` have unit tests with fakes, not a real stream.
 - Rate limits are per address and in memory: they reset when the API restarts, and they do not stop an attacker who rotates addresses. Behind a second proxy (for example a TLS terminator in front of nginx) every client shares that proxy's address unless the proxy passes the real one on.
