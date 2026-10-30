@@ -5,7 +5,7 @@ import { CDN_BASE, METADATA_URL } from '../src/config.ts';
 
 const web = (...p: string[]) => resolve(import.meta.dirname, '..', ...p);
 const html = readFileSync(web('index.html'), 'utf8');
-const links = [...html.matchAll(/<link\b[^>]*>/g)].map((m) => m[0]);
+const links = [...html.matchAll(/<link\b[^>]*>/gi)].map((m) => m[0]);
 
 describe('index.html', () => {
   it('preconnects to the CDN host used by config.ts, with and without CORS', () => {
@@ -23,7 +23,7 @@ describe('index.html', () => {
   });
 
   it('starts the metadata request early, for the same URL as the poll in nowPlaying.ts', () => {
-    const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join('\n');
+    const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)].map((m) => m[1]).join('\n');
     expect(inline).toContain('window.__earlyMetadata');
     expect(inline).toContain(`fetch('${METADATA_URL}'`);
     expect(inline).toContain("cache: 'no-store'");
