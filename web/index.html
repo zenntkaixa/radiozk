@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>radiozk</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Start the CDN connection (DNS + TLS) now instead of when the first request is made after the JS has loaded.
+         Same host as CDN_BASE in src/config.ts (test/indexHtml.test.ts keeps them in step). Both variants are needed:
+         fetch/XHR (metadata, HLS) and <img> (cover) use separate connection pools. -->
+    <link rel="preconnect" href="https://d3d4yli4hf5bmh.cloudfront.net" crossorigin />
+    <link rel="preconnect" href="https://d3d4yli4hf5bmh.cloudfront.net" />
   </head>
   <body>
     <div id="root"></div>

@@ -46,9 +46,16 @@ try {
   check('recently played lists tracks', (await now.locator('ol li').count()) >= 1, `${await now.locator('ol li').count()} items`);
   await page.screenshot({ path: `${shots}/1-loaded.png`, fullPage: true });
 
+  // Before the first Play the media session must stay untouched: setting its metadata makes the browser download
+  // the cover a second time, competing with the visible one.
+  const sessionTitle = () => page.evaluate(() => navigator.mediaSession?.metadata?.title ?? null);
+  check('media session untouched before Play', (await sessionTitle()) === null, String(await sessionTitle()));
+
   // --- playback ---
   await page.getByRole('button', { name: 'Play' }).click();
   const status = page.getByRole('status');
+  await page.waitForFunction(() => !!navigator.mediaSession?.metadata?.title, null, { timeout: 10000 }).catch(() => {});
+  check('media session set once playing', !!(await sessionTitle()), String(await sessionTitle()));
   // The live timeline doesn't start at 0, so measure real advancement over wall-clock time.
   await page.waitForFunction(() => { const a = document.querySelector('audio'); return a && !a.paused && a.readyState >= 3; }, null, { timeout: 40000 }).catch(() => {});
   const sample = () => page.evaluate(() => { const a = document.querySelector('audio'); return { t: a.currentTime, paused: a.paused, ready: a.readyState, err: a.error?.message ?? null }; });
