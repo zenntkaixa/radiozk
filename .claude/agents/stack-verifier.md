@@ -1,6 +1,6 @@
 ---
 name: stack-verifier
-description: Builds a throwaway Docker copy of the radiozk production stack, runs the Playwright e2e (Firefox and/or Chromium) and optionally the perf script against it N times, tears everything down, and returns a compact pass/fail table. Use it after any change to the web app, API, nginx, Dockerfile or e2e script, instead of running builds and e2e logs in the main conversation. Give it what changed, how many runs, which browsers, whether to include perf, and whether to add a control run of plain `develop`.
+description: Builds a throwaway Docker copy of the radiozk stack, runs the Playwright e2e (Firefox and/or Chromium) and optionally perf N times, tears down, and returns a pass/fail table. Use after web, API, nginx, Dockerfile or e2e changes. Tell it what changed, runs, browsers, perf, and whether to add a control run of `develop`.
 tools: Bash, Read, Grep, Glob
 model: sonnet
 ---
