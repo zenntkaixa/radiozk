@@ -81,17 +81,53 @@ jobs:
       - name: Build and smoke-test the production images
         run: bin/docker-smoke.sh
 
+  # Scans the production images (OS packages and the app's dependencies) and the Dockerfile/compose files.
+  # Fixable HIGH/CRITICAL findings fail the job; unfixed ones are ignored, because nothing can be done about them yet.
+  # Runs weekly too: new advisories appear without any change to the code (same reason as the audit job).
+  trivy:
+    name: trivy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the production images
+        run: |
+          docker build --target api -t radiozk-api:scan .
+          docker build --target web -t radiozk-web:scan .
+      - name: Scan the api image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: radiozk-api:scan
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Scan the web image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: radiozk-web:scan
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Scan the Dockerfile and compose files
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
   # One check to require in branch protection: green only when every job that should run has passed.
   ci:
     name: ci
     if: always()
-    needs: [test, audit, docker]
+    needs: [test, audit, docker, trivy]
     runs-on: ubuntu-latest
     steps:
       - name: Require every job to pass
         run: |
-          echo "test=${{ needs.test.result }} audit=${{ needs.audit.result }} docker=${{ needs.docker.result }}"
-          [ "${{ needs.audit.result }}" = success ] || exit 1
+          echo "test=${{ needs.test.result }} audit=${{ needs.audit.result }} docker=${{ needs.docker.result }} trivy=${{ needs.trivy.result }}"
+          [ "${{ needs.audit.result }}" = success ] && [ "${{ needs.trivy.result }}" = success ] || exit 1
           if [ "${{ github.event_name }}" != schedule ]; then
             [ "${{ needs.test.result }}" = success ] && [ "${{ needs.docker.result }}" = success ] || exit 1
           fi

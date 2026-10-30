@@ -1,0 +1,34 @@
+name: CodeQL
+
+# Static analysis of the JavaScript/TypeScript code (API and front end). Findings show up under Security > Code scanning.
+# Separate from ci.yml: it is slower, needs security-events: write, and is not part of the `ci` gate.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  schedule:
+    - cron: '41 5 * * 1'   # weekly: new queries are released without any change to the code
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
