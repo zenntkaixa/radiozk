@@ -12,7 +12,7 @@ if ! psql -U postgres -d postgres -tAc "select 1 from pg_roles where rolname='ra
 fi
 # nginx
 MIME=$(ls "$LOCAL_ROOT"/etc/nginx/mime.types)
-sed -e "s|MIMETYPES|$MIME|" -e "s|WWWROOT|$PROJECT/www|" -e "s|NGINX_PORT|$NGINX_PORT|" -e "s|APP_PORT|$APP_PORT|" \
+sed -e "s|MIMETYPES|$MIME|" -e "s|WWWROOT|$PROJECT/www|" -e "s|SECURITYHEADERS|$PROJECT/docker/security-headers.conf|" -e "s|NGINX_PORT|$NGINX_PORT|" -e "s|APP_PORT|$APP_PORT|" \
   "$PROJECT/dev/nginx/nginx.conf" > "$PROJECT/dev/nginx/nginx.generated.conf"
 if nginx_running; then
   nginx_ctl -s reload
