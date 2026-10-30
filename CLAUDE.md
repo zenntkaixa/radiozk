@@ -14,7 +14,7 @@ The toolchain is **not installed system-wide**. Node, nginx and PostgreSQL live 
 source bin/env.sh
 ```
 
-Shell state does not persist between tool calls, so source it in the same command (`source bin/env.sh && npm ...`). `env.sh` also holds the ports and DB credentials. The project targets Node 26 (LTS from 2026-10-28; the Dockerfile and CI use it and `@types/node` is on 26); the host `.local/` copy may still be an older Node 24, and everything is tested on both. Nothing recreates `.local/` automatically; a fresh clone would need those downloaded again.
+Shell state does not persist between tool calls, so source it in the same command (`source bin/env.sh && npm ...`). `env.sh` also holds the ports and DB credentials. The project targets Node 26 (LTS from 2026-10-28): the host `.local/node` is 26.13.0, and the Dockerfile, CI and `@types/node` use 26 too. Node 24 still works (it was the previous version, and the suites passed on both), so don't rely on 26-only behaviour such as `node --test <dir>`. Nothing recreates `.local/` automatically; a fresh clone would need those downloaded again.
 
 ## Commands
 
@@ -39,7 +39,7 @@ There is no linter. Checks available:
 
 Playwright MCP: a `playwright` MCP server (`@playwright/mcp@0.0.83`, Firefox, headless) is registered in the user's local Claude config (not in the repo; re-add with `claude mcp add playwright --scope local ...`, see `claude mcp get playwright`). Its Playwright version needs Firefox build 1553, separate from the 1555 build used by `npm run e2e`; both live in `~/.cache/ms-playwright`. Its snapshots/screenshots go to `dev/playwright-mcp/` (ignored). Tools appear after a Claude Code restart.
 
-Ports: nginx 8080, Node API 3000, Vite 5173, PostgreSQL 5433 (DB/user/password all `radiozk`, localhost only). `NGINX_PORT`/`APP_PORT`/`PG*` are defined once in `bin/env.sh`: `start.sh` templates them into the nginx config and the Vite proxy reads `APP_PORT`. The e2e default URL and the API tests' port 3100 are separate.
+Ports: nginx 8080, Node API 3000, Vite 5173, PostgreSQL 5433 (DB/user/password all `radiozk`, localhost only). `NGINX_PORT`/`APP_PORT`/`PG*` are defined once in `bin/env.sh`: `start.sh` templates them into the nginx config and the Vite proxy reads `APP_PORT`. The e2e default URL and the API tests' port 3100 are separate. The Docker production stack also publishes port 8080, so `bin/start.sh` cannot start the host nginx while it runs (stop one of them); to run the e2e test without touching production data, point it at a throwaway Docker stack (`COMPOSE_PROJECT_NAME=radiozk-e2e TAG=e2e WEB_PORT=18081 POSTGRES_PASSWORD=x docker compose up -d --build --wait`, then `npm run e2e -- http://localhost:18081`, then `docker compose down -v`).
 
 On first play the stream rebuffers for ~2 s before settling at real time (status briefly flips Live → Buffering…); the e2e test allows for it. The live media timeline doesn't start at 0, so judge playback by elapsed `currentTime`, not its absolute value.
 
