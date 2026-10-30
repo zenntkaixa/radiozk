@@ -17,6 +17,12 @@ page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
 page.on('console', (m) => m.type() === 'error' && problems.push(`console: ${m.text()}`));
 page.on('requestfailed', (r) => problems.push(`requestfailed: ${r.url()} ${r.failure()?.errorText}`));
 
+// The CSP sent by nginx must not block anything the player needs (script hash, CDN, blob: media and worker).
+await page.addInitScript(() => {
+  window.__cspViolations = [];
+  document.addEventListener('securitypolicyviolation', (e) => window.__cspViolations.push(`${e.violatedDirective} blocked ${e.blockedURI}`));
+});
+
 try {
   await page.goto(base);
   await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 });
@@ -83,6 +89,8 @@ try {
     .then(() => true).catch(() => false);
   check('AAC option plays', aacOk, (await status.textContent())?.replace(/\s+/g, ' ').trim());
   await page.getByLabel('Lossless (FLAC)').check();
+  const violations = await page.evaluate(() => window.__cspViolations);
+  check('no Content-Security-Policy violations (page, FLAC and AAC playback)', violations.length === 0, violations.join('; '));
   await page.getByRole('button', { name: /Pause|Play/ }).first().waitFor();
 
   // --- ratings ---
