@@ -8,13 +8,14 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 |---|---|---|---|---|
 | Backend unit | `app/test/validate.test.js` | `node:test` | nothing | milliseconds |
 | Backend API (integration) | `app/test/ratings.test.js` | `node:test` | PostgreSQL | seconds |
+| Backend security | `app/test/security.test.js` | `node:test` | PostgreSQL | seconds |
 | Frontend parser | `web/test/nowPlaying.test.mjs` | `node:test` | nothing | milliseconds |
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 28 backend (10 unit + 18 API), 8 parser, 28 UI, 18 e2e checks.
+Current counts: 42 backend (11 unit + 18 API + 13 security), 8 parser, 28 UI, 18 e2e checks.
 
-The first four layers run in CI. The e2e layer does not: it needs the real stream and a full local stack.
+The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
 ## Running the tests
 
@@ -32,6 +33,9 @@ Individual suites:
 | Backend, all | `cd app && npm test` |
 | Backend unit only (no DB) | `cd app && npm run test:unit` |
 | Backend API only | `cd app && npm run test:api` |
+| Backend security tests only | `cd app && npm run test:security` (or `make security-tests`) |
+| Dependency audit | `make audit` (or `bin/audit.sh`) |
+| Audit + security tests | `make security` |
 | Backend coverage report | `cd app && npm run test:coverage` |
 | Frontend, all (parser + UI) | `cd web && npm test` |
 | Frontend parser only | `cd web && npm run test:parser` |
@@ -98,14 +102,38 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 
 ## Continuous integration
 
-`.github/workflows/test.yml` runs on pushes to `main` and on pull requests:
+`.github/workflows/ci.yml` (one workflow, read-only token, superseded runs of the same ref are cancelled) runs on pushes to `main` and `develop`, on pull requests, and weekly on Mondays. Jobs:
 
-1. `npm ci` in `app/` and `web/`
-2. `npm run build` in `web/` (type check, which includes the tests, plus the production build)
-3. `npm test` in `app/`, against a `postgres:18` service container
-4. `npm test` in `web/`
+| Job | What it does | Runs on |
+|---|---|---|
+| `test` | `npm ci`, then `npm run build` in `web/` (type check, which includes the tests, plus the production build), then `npm test` in `app/` against a `postgres:18` service container (backend unit, API **and security tests**), then `npm test` in `web/` (parser and UI tests) | push, PR |
+| `audit` | `bin/audit.sh`: `npm audit` in `app/` and `web/`, fails on high and above | push, PR, weekly |
+| `docker` | `bin/docker-smoke.sh`: builds the production images and checks them end to end | push, PR |
+| `ci` | Gate: green only when `audit` passed and, outside the weekly run, `test` and `docker` passed too | always |
+
+The weekly run executes only `audit`, because new advisories appear without any code change; a failure there shows up as a failed run on `main`'s Actions page. Require the single `ci` check in branch protection instead of listing each job.
+
+Inside the dev containers the same suites run with `docker compose -f compose.dev.yaml exec api npm test` and `... exec web npm test`.
 
 The other two workflows in `.github/workflows/` belong to the Claude GitHub App (PR assistant and code review) and don't run the test suites.
+
+## Security checks
+
+`make security` runs the dependency audit and the security tests. `make` with no target lists all targets.
+
+**Dependency audit** (`bin/audit.sh`): `npm audit` in `app/` and `web/`, dev dependencies included. It fails on **high** and critical advisories; lower severities are printed but don't fail. `AUDIT_LEVEL=moderate make audit` tightens it. CI runs it as the `audit` job (see above), including a weekly run. Dependabot (`.github/dependabot.yml`) opens weekly PRs against `develop` for npm, Docker base images and GitHub Actions.
+
+**Security tests** (`app/test/security.test.js`, on its own port and database so it runs in parallel with the API tests) cover:
+
+- no `X-Powered-By` header and no CORS headers
+- malformed JSON gives 400 and an oversized body gives 413, with no stack traces or internals in any error
+- wrong content types, non-string `artist`/`title` (objects, arrays, numbers) and repeated query parameters are rejected, not coerced
+- SQL injection payloads in `artist`, `title` and the listener-id header are treated as data, and the table survives
+- one listener can't read or clear another listener's vote
+
+**Known, accepted gaps.** There is no rate limiting, and a vote is tied only to a random id the client chooses (no IP or fingerprint binding). This was discussed and postponed. Two tests named `KNOWN GAP` pin today's behaviour: one listener can rate many tracks without throttling, and unlimited fresh listener ids can inflate one track's count. If you add rate limiting, those tests will fail: change them to assert the new protection and remove the gap from this list.
+
+Not covered: image scanning (Trivy), static analysis (CodeQL), HTTP security headers on nginx (CSP, `X-Content-Type-Options`, etc.), and TLS, which the Docker setup leaves to a proxy in front.
 
 ## Known gaps
 

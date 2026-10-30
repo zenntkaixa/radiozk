@@ -1,0 +1,15 @@
+.git
+.github
+.local
+node_modules
+**/node_modules
+www
+dev
+bin
+.env
+.env.*
+*.log
+Radio*
+stream_URL.txt
+**/e2e
+.playwright-mcp

@@ -60,6 +60,14 @@ test('parseTrackRequest enforces length limits after normalising', () => {
   assert.ok(!parseTrackRequest(ID, { artist: ` ${'a'.repeat(MAX_ARTIST)} `, title: 'T' }).error);
 });
 
+test('parseTrackRequest rejects non-string artist/title instead of coercing them', () => {
+  for (const bad of [{ title: ['a', 'b'] }, { title: { x: 1 } }, { title: 7 }, { artist: ['a', 'b'] }, { artist: 5 }, { artist: {} }]) {
+    const r = parseTrackRequest(ID, { artist: 'A', title: 'T', ...bad });
+    assert.match(r.error, /must be strings/, JSON.stringify(bad));
+  }
+  assert.ok(!parseTrackRequest(ID, { artist: null, title: 'T' }).error); // a null artist counts as empty
+});
+
 test('isRatingValue accepts only 1, -1 and 0', () => {
   for (const ok of [1, -1, 0]) assert.ok(isRatingValue(ok));
   for (const bad of ['1', 2, -2, 0.5, null, undefined, true, NaN, [1]]) assert.ok(!isRatingValue(bad), String(bad));
