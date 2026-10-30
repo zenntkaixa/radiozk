@@ -133,7 +133,7 @@ Full details are in [README-TESTING.md](README-TESTING.md); in short:
   - backend (`app/`): pure unit tests of the request validation, plus black-box API tests that spawn the real server on port 3100 against a throwaway `radiozk_test` database (PostgreSQL must be running);
   - frontend (`web/`): metadata parser tests and Vitest + Testing Library tests of the rating UI (`RatingButtons`, `api.ts`, `listenerId.ts`).
 - Each suite has its own script: `npm run test:unit` / `test:api` in `app/`, `npm run test:parser` / `test:ui` in `web/`.
-- GitHub Actions (`.github/workflows/test.yml`) type-checks, builds and runs these suites on every push to `main` and on pull requests, against a Postgres service container.
+- GitHub Actions (`.github/workflows/ci.yml`) type-checks, builds and runs these suites on every push to `main` and `develop` and on pull requests, against a Postgres service container.
 - `npm run e2e` (in `web/`) drives headless Firefox through Playwright against <http://localhost:8080>: page render, FLAC and AAC playback, ratings, routing. It needs nginx, PostgreSQL and the API running, plus a current build in `www/`. It casts real votes, so clean up afterwards:
 
   ```sh
