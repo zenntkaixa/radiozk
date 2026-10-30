@@ -51,6 +51,9 @@ jobs:
       - name: Type check and build
         run: npm run build
         working-directory: web
+      - name: Bundle size budget
+        run: npm run size
+        working-directory: web
       - name: Backend tests (unit, API, security)
         run: npm test
         working-directory: app
