@@ -12,6 +12,10 @@ on:
 
 jobs:
   claude-review:
+    # The action refuses to run when a bot initiated the workflow ("non-human actor: dependabot"), which only
+    # produced a red check on every Dependabot PR. Skip those; a human re-running the job still gets a review.
+    if: github.actor != 'dependabot[bot]'
+
     # Optional: Filter by PR author
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||
