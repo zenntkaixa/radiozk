@@ -5,7 +5,7 @@
 #   dev-api  development API           (all dependencies, node --watch; source is bind-mounted)
 #   dev-web  development front end     (Vite dev server with HMR; source is bind-mounted)
 ARG NODE_IMAGE=node:26-alpine
-ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.28-alpine
+ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.30-alpine
 
 # ---------- API ----------
 FROM ${NODE_IMAGE} AS api-base
@@ -30,6 +30,10 @@ ENV NODE_ENV=production HOST=0.0.0.0 APP_PORT=3000
 COPY --from=api-prod-deps /srv/app/node_modules ./node_modules
 COPY app/package.json ./
 COPY app/src ./src
+# The runtime image only runs `node`. The npm bundled with the base image carries its own dependencies (undici,
+# brace-expansion, ...) that scanners flag, and nothing here needs a package manager.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn* /usr/local/bin/yarn*
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
@@ -60,7 +64,12 @@ RUN npm run build        # tsc && vite build, writes to ../www (/srv/www)
 
 FROM ${NGINX_IMAGE} AS web
 ENV API_UPSTREAM=api:3000 RESOLVER=127.0.0.11
+# Pick up Alpine security fixes published after the base image was built (curl, openssl, ...).
+USER root
+RUN apk upgrade --no-cache
+USER nginx
 COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/security-headers.conf /etc/nginx/security-headers.conf
 COPY --from=web-build /srv/www /usr/share/nginx/html
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 \

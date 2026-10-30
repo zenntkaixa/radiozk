@@ -29,10 +29,15 @@ browser ──> nginx :8080 ──> static files from www/     (SPA fallback to 
 dev:  browser ──> Vite :5173 ──(proxies /api)──> Node :3000
 ```
 
+A fuller diagram of the system (browser, nginx, API, PostgreSQL, the Radio Calico CDN, dev mode and CI) is in [`docs/architecture.mmd`](docs/architecture.mmd), in [Mermaid](https://mermaid.js.org/) format. It does not render inside this README: open the file in a Mermaid-compatible viewer to see it, for example paste its contents into the online editor at <https://mermaid.live>, or use a Mermaid preview extension in your editor.
+
+The browser talks to the Radio Calico CDN directly for the stream, metadata and cover; only ratings go through our API. Dotted lines exist in development only.
+
 ```
 app/      Express API (src/server.js, src/db.js, src/routes/ratings.js) and its tests
 web/      Vite + React front end, parser tests, Playwright e2e script
 bin/      helper scripts (env, start/stop, build, tests, psql)
+docs/     architecture diagram (Mermaid, docs/architecture.mmd)
 dev/      nginx config template and runtime state (git-ignored)
 www/      production build output (generated, git-ignored)
 ```

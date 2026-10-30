@@ -13,9 +13,9 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 42 backend (11 unit + 18 API + 13 security), 13 parser, 63 UI, 24 e2e checks.
+Current counts: 42 backend (11 unit + 18 API + 13 security), 13 parser, 70 UI, 25 e2e checks.
 
-The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
+The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks the security headers on pages, assets, API and error responses, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
 ## Running the tests
 
@@ -56,7 +56,7 @@ cd web && npm run e2e               # optional URL argument, default http://loca
 bin/psql.sh -c 'truncate ratings'   # clean up afterwards
 ```
 
-It checks page render, FLAC and AAC playback advancing in real time, ratings (including persistence across a reload) and routing. It casts real votes in your development database, hence the cleanup step. It uses Playwright's bundled Firefox from `~/.cache/ms-playwright`. The test machine has no audio device, so it proves that audio decodes and advances, not that it is audible.
+It checks page render, FLAC and AAC playback advancing in real time, ratings (including persistence across a reload), routing, and that the Content-Security-Policy blocks nothing the player needs. It casts real votes in your development database, hence the cleanup step. It uses Playwright's bundled Firefox from `~/.cache/ms-playwright`. The test machine has no audio device, so it proves that audio decodes and advances, not that it is audible.
 
 ## What each layer covers
 
@@ -101,6 +101,7 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 - `idle.test.ts`: `whenIdle` (delay, idle callback, waiting for images with a cap, cancelling) and `saveDataRequested`.
 - `useMediaSession.test.tsx`: the media session (and so the artwork download) stays untouched until playback has started, then follows track changes and keeps its metadata while paused.
 - `indexHtml.test.ts`: `index.html` preconnects to the same CDN host as `config.ts` (with and without CORS) its icon file exists in `public/`, and its inline early metadata request uses `METADATA_URL`.
+- `securityHeaders.test.ts`: `docker/security-headers.conf` pins the inline script of `index.html` by hash, allows only the station CDN, covers what the player needs (`blob:`, `data:`), and is included in every production nginx location, the image and the host config.
 - `useNowPlaying.test.tsx`: the hook uses the early request from `index.html` once without fetching again, and falls back to a normal fetch when it is missing or failed.
 
 ## Writing new tests
@@ -120,6 +121,8 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 | `test` | `npm ci`, then `npm run build` in `web/` (type check, which includes the tests, plus the production build) and `npm run size` (bundle size budget), then `npm test` in `app/` against a `postgres:18` service container (backend unit, API **and security tests**), then `npm test` in `web/` (parser and UI tests) | push, PR |
 | `audit` | `bin/audit.sh`: `npm audit` in `app/` and `web/`, fails on high and above | push, PR, weekly |
 | `docker` | `bin/docker-smoke.sh`: builds the production images and checks them end to end | push, PR |
+| `trivy` | builds the `api` and `web` images and scans them (OS packages, dependencies, secrets) plus the Dockerfile and compose files with Trivy; fails on fixable HIGH/CRITICAL findings | push, PR, weekly |
+| `CodeQL` (own workflow, `codeql.yml`) | static analysis of the JavaScript/TypeScript code; results under Security > Code scanning, not part of the `ci` gate | push, PR, weekly |
 | `ci` | Gate: green only when `audit` passed and, outside the weekly run, `test` and `docker` passed too | always |
 
 The weekly run executes only `audit`, because new advisories appear without any code change; a failure there shows up as a failed run on `main`'s Actions page. Require the single `ci` check in branch protection instead of listing each job.

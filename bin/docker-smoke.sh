@@ -20,6 +20,14 @@ status() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 check "index"                200 "$(status "$BASE/")"
 check "SPA fallback"         200 "$(status "$BASE/about")"
 check "api health via nginx" 200 "$(status "$BASE/api/health")"
+# Security headers must reach every kind of response: page, hashed asset, API, and an error (add_header in a location
+# replaces inherited ones, and without `always` nginx skips error responses).
+header() { curl -s -D - -o /dev/null "$2" | tr -d '\r' | awk -v h="$1" 'tolower($1) == tolower(h ":") { $1 = ""; print substr($0, 2) }'; }
+ASSET=$(curl -s "$BASE/" | grep -o '/assets/[^"]*\.js' | head -1)
+for url in "$BASE/" "$BASE$ASSET" "$BASE/api/health" "$BASE/assets/missing.js"; do
+  check "nosniff on ${url#$BASE}"  nosniff "$(header X-Content-Type-Options "$url")"
+  check "CSP on ${url#$BASE}"      yes "$(header Content-Security-Policy "$url" | grep -q "frame-ancestors 'none'" && echo yes || echo no)"
+done
 # `compose port` prints ":0" for a port that is not published
 published() { local p; p=$(docker compose port "$@" 2>/dev/null || true); [ -z "$p" ] || [ "$p" = ":0" ] && echo no || echo yes; }
 check "api not published"    no "$(published api 3000)"
