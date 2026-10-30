@@ -9,11 +9,11 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 | Backend unit | `app/test/validate.test.js` | `node:test` | nothing | milliseconds |
 | Backend API (integration) | `app/test/ratings.test.js` | `node:test` | PostgreSQL | seconds |
 | Backend security | `app/test/security.test.js` | `node:test` | PostgreSQL | seconds |
-| Frontend parser | `web/test/nowPlaying.test.mjs` | `node:test` | nothing | milliseconds |
+| Frontend parser, size check | `web/test/nowPlaying.test.mjs`, `web/test/checkSize.test.mjs` | `node:test` | nothing | milliseconds |
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 42 backend (11 unit + 18 API + 13 security), 8 parser, 28 UI, 18 e2e checks.
+Current counts: 42 backend (11 unit + 18 API + 13 security), 13 parser, 63 UI, 24 e2e checks.
 
 The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
@@ -79,6 +79,12 @@ Environment overrides:
 
 - `ADMIN_DATABASE_URL`: connection used to create `radiozk_test` (default: the local dev database on port 5433). CI sets it to the Postgres service container.
 
+### Bundle size budget: `web/scripts/check-size.mjs`
+
+After a build (`bin/build.sh`), `cd web && npm run size` checks gzip sizes (level 6, as nginx sends them) in `www/`: everything `index.html` loads up front must stay under `initialKb` (95 KB; about 88 KB when set), each other JS chunk under `lazyChunkKb` (120 KB; `hls.light` is about 110 KB), and the initial files must not contain hls.js at all. CI runs it right after the build. Raise a limit in `BUDGET` deliberately, in the PR that needs it. `test/checkSize.test.mjs` runs the check on small fake builds.
+
+`cd web && npm run perf [url]` (`scripts/perf.mjs`) measures a cold and a warm page load in headless Firefox: request timeline, FCP, LCP, transferred bytes. It is a manual tool, not a test: timings depend on the CDN that serves the cover, so compare several runs. Point it at a build that is being served (default http://localhost:8080/).
+
 ### Frontend parser: `web/test/nowPlaying.test.mjs`
 
 Tests `parse()` from `web/src/nowPlaying.ts`, which normalises the station's `metadatav2.json` (stray whitespace, previous-tracks list). Node strips the TypeScript types, so no build step is needed.
@@ -91,6 +97,11 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 - `api.test.ts`: request URLs, the `x-listener-id` header, POST bodies and error mapping, with `fetch` stubbed.
 - `listenerId.test.ts`: UUID generation and persistence, behaviour when storage is blocked, and the fallback when `crypto.randomUUID` is missing. The module caches state, so each test loads a fresh copy.
 - `rating.test.ts`: `applyVote` as a pure function.
+- `useRadioStream.test.tsx`: the playback hook with a fake `hls.js/light` and a controllable idle scheduler: nothing is loaded until idle, never in native mode, Save-Data and load failures (with retry), unmount while loading, Play before and after the player exists (including pressing it twice), FLAC pinning with the AAC fallback notice, and quality switches while paused, playing and mid-start. The fake is registered per test with `vi.doMock`, because Vitest caches a `vi.mock` factory's result across `resetModules()`.
+- `idle.test.ts`: `whenIdle` (delay, idle callback, waiting for images with a cap, cancelling) and `saveDataRequested`.
+- `useMediaSession.test.tsx`: the media session (and so the artwork download) stays untouched until playback has started, then follows track changes and keeps its metadata while paused.
+- `indexHtml.test.ts`: `index.html` preconnects to the same CDN host as `config.ts` (with and without CORS) its icon file exists in `public/`, and its inline early metadata request uses `METADATA_URL`.
+- `useNowPlaying.test.tsx`: the hook uses the early request from `index.html` once without fetching again, and falls back to a normal fetch when it is missing or failed.
 
 ## Writing new tests
 
@@ -106,7 +117,7 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 
 | Job | What it does | Runs on |
 |---|---|---|
-| `test` | `npm ci`, then `npm run build` in `web/` (type check, which includes the tests, plus the production build), then `npm test` in `app/` against a `postgres:18` service container (backend unit, API **and security tests**), then `npm test` in `web/` (parser and UI tests) | push, PR |
+| `test` | `npm ci`, then `npm run build` in `web/` (type check, which includes the tests, plus the production build) and `npm run size` (bundle size budget), then `npm test` in `app/` against a `postgres:18` service container (backend unit, API **and security tests**), then `npm test` in `web/` (parser and UI tests) | push, PR |
 | `audit` | `bin/audit.sh`: `npm audit` in `app/` and `web/`, fails on high and above | push, PR, weekly |
 | `docker` | `bin/docker-smoke.sh`: builds the production images and checks them end to end | push, PR |
 | `ci` | Gate: green only when `audit` passed and, outside the weekly run, `test` and `docker` passed too | always |
