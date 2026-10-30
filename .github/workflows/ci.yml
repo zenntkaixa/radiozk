@@ -36,7 +36,7 @@ jobs:
       # The API tests create and use their own throwaway databases on this server.
       ADMIN_DATABASE_URL: postgresql://radiozk:radiozk@127.0.0.1:5432/radiozk
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -62,7 +62,7 @@ jobs:
     name: audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -74,7 +74,7 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build and smoke-test the production images
         run: bin/docker-smoke.sh
 
