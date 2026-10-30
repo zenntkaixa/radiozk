@@ -12,7 +12,7 @@ const directive = (name: string) => csp.split(';').map((d) => d.trim()).find((d)
 
 describe('nginx security headers (docker/security-headers.conf)', () => {
   it('pins the inline script of index.html by hash, so the CSP and the script cannot drift apart', () => {
-    const inline = [...read('web', 'index.html').matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    const inline = [...read('web', 'index.html').matchAll(/<script>([\s\S]*?)<\/script>/gi)].map((m) => m[1]);
     expect(inline).toHaveLength(1);
     const hash = createHash('sha256').update(inline[0]).digest('base64');
     expect(directive('script-src')).toContain(`'sha256-${hash}'`);
