@@ -45,7 +45,7 @@ Individual suites:
 | Vitest watch mode | `cd web && npx vitest` |
 | Type check (includes `web/test/`) | `cd web && npm run typecheck` |
 
-Use globs such as `'test/*.test.js'` rather than a directory: `node --test test/` fails on Node 24.
+Use globs such as `'test/*.test.js'` rather than a directory: `node --test test/` fails on Node 24 (it works on 26, but the globs work on both).
 
 ### End-to-end
 

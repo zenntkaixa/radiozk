@@ -44,7 +44,7 @@ www/      production build output (generated, git-ignored)
 The scripts expect Node, nginx and PostgreSQL under a git-ignored `.local/` directory (extracted `.deb` packages and the Node tarball). **Nothing recreates `.local/` automatically**, so on a fresh clone you must either:
 
 - provide those binaries in `.local/` the same way, or
-- install Node 24, nginx and PostgreSQL 18 yourself and adjust the paths in `bin/env.sh` (and the `mime.types` lookup in `bin/start.sh`).
+- install Node 26 (the current LTS), nginx and PostgreSQL 18 yourself and adjust the paths in `bin/env.sh` (and the `mime.types` lookup in `bin/start.sh`).
 
 All ports and database credentials are defined once in `bin/env.sh`.
 
@@ -85,7 +85,7 @@ The project also ships as containers, so it can run without the `.local/` toolch
 
 | | Production (`compose.yaml`) | Development (`compose.dev.yaml`) |
 |---|---|---|
-| Services | PostgreSQL 18, API (Node 24, non-root, read-only filesystem), nginx serving the built front end and proxying `/api` | PostgreSQL 18, API with `node --watch`, Vite dev server with HMR |
+| Services | PostgreSQL 18, API (Node 26, non-root, read-only filesystem), nginx serving the built front end and proxying `/api` | PostgreSQL 18, API with `node --watch`, Vite dev server with HMR |
 | Source | baked into the images | bind-mounted from `app/` and `web/` |
 | Published | web only, on `127.0.0.1:8080` | web 5173, API 3000, PostgreSQL 5433 (all on loopback) |
 | Data | named volume `pgdata` | named volume `pgdata` |
