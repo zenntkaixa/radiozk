@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { parseTrackRequest, isRatingValue } from '../validate.js';
+import { readLimiter, writeLimiter } from '../rateLimit.js';
 
 /** Validates the request and returns { listener, artist, title, key }, or sends a 400 and returns null. */
 function parseRequest(req, res) {
@@ -25,14 +26,14 @@ async function summary(key, listener) {
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', readLimiter(), async (req, res) => {
   const ctx = parseRequest(req, res);
   if (!ctx) return;
   res.json(await summary(ctx.key, ctx.listener));
 });
 
 // value: 1 = thumbs up, -1 = thumbs down, 0 = clear my rating
-router.post('/', async (req, res) => {
+router.post('/', writeLimiter(), async (req, res) => {
   const ctx = parseRequest(req, res);
   if (!ctx) return;
   const value = req.body?.value;
