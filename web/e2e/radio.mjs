@@ -9,6 +9,22 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`);
 };
 
+// The stream is live and comes from a CDN, so it sometimes stalls for a second or two to rebuffer. Instead of asserting
+// "5.2 s of media in exactly 6 s" (which failed whenever the CDN hiccuped), wait until the <audio> has advanced `seconds`
+// of media, within `timeoutMs`. A live stream cannot play faster than real time, so this still proves it decodes and
+// advances; a stall that does not recover within the timeout still fails.
+async function mediaAdvance(p, seconds, timeoutMs) {
+  const read = () => p.evaluate(() => { const a = document.querySelector('audio'); return { t: a.currentTime, paused: a.paused, err: a.error?.message ?? null }; });
+  const start = Date.now();
+  const first = await read();
+  let last = first;
+  while (last.t - first.t < seconds && Date.now() - start < timeoutMs) {
+    await p.waitForTimeout(250);
+    last = await read();
+  }
+  return { advanced: last.t - first.t, wall: (Date.now() - start) / 1000, paused: last.paused, err: last.err };
+}
+
 const browser = await firefox.launch({ headless: true });
 const ctx = await browser.newContext({ viewport: { width: 900, height: 1100 } });
 const page = await ctx.newPage();
@@ -64,14 +80,11 @@ try {
   check('media session set once playing', !!(await sessionTitle()), String(await sessionTitle()));
   // The live timeline doesn't start at 0, so measure real advancement over wall-clock time.
   await page.waitForFunction(() => { const a = document.querySelector('audio'); return a && !a.paused && a.readyState >= 3; }, null, { timeout: 40000 }).catch(() => {});
-  const sample = () => page.evaluate(() => { const a = document.querySelector('audio'); return { t: a.currentTime, paused: a.paused, ready: a.readyState, err: a.error?.message ?? null }; });
-  await page.waitForTimeout(4000); // allow for the ~2s startup rebuffer seen on first play
-  const s0 = await sample();
-  await page.waitForTimeout(6000);
-  const s1 = await sample();
-  const advanced = s1.t - s0.t;
+  await page.waitForTimeout(2000); // let the ~2s startup rebuffer pass
+  const m = await mediaAdvance(page, 5, 25000);
+  await page.waitForFunction(() => /Live/.test(document.querySelector('[role=status]')?.textContent ?? ''), null, { timeout: 10000 }).catch(() => {});
   const statusText = (await status.textContent())?.replace(/\s+/g, ' ').trim();
-  check('audio plays (advances ~real time over 6s)', advanced > 5.2 && !s1.paused && !s1.err, `advanced ${advanced.toFixed(1)}s, ready=${s1.ready}, err=${s1.err}`);
+  check('audio plays (advances 5s of media within 25s)', m.advanced >= 5 && !m.paused && !m.err, `advanced ${m.advanced.toFixed(1)}s in ${m.wall.toFixed(1)}s, err=${m.err}`);
   check('status says Live', /Live/.test(statusText ?? ''), statusText);
   check('lossless FLAC selected', /FLAC/.test(statusText ?? '') && /lossless/.test(statusText ?? ''), statusText);
   await page.screenshot({ path: `${shots}/2-playing.png`, fullPage: true });
@@ -149,13 +162,11 @@ try {
     check(`first Play ${label}: tests the intended path`, loadedAtClick === waitForLibrary, `library loaded at click: ${loadedAtClick}`);
     await playBtn.click();
     await p.waitForFunction(() => { const a = document.querySelector('audio'); return a && !a.paused && a.readyState >= 3; }, null, { timeout: 40000 }).catch(() => {});
-    await p.waitForTimeout(4000); // startup rebuffer
-    const at = () => p.evaluate(() => document.querySelector('audio').currentTime);
-    const a0 = await at();
-    await p.waitForTimeout(4000);
-    const advancedFresh = (await at()) - a0;
+    await p.waitForTimeout(2000); // startup rebuffer
+    const mf = await mediaAdvance(p, 3, 20000);
+    await p.waitForFunction(() => /Live/.test(document.querySelector('[role=status]')?.textContent ?? ''), null, { timeout: 10000 }).catch(() => {});
     const st = (await p.getByRole('status').textContent())?.replace(/\s+/g, ' ').trim();
-    check(`first Play ${label}: plays`, advancedFresh > 3.4 && /Live/.test(st ?? ''), `advanced ${advancedFresh.toFixed(1)}s in 4s, ${st}`);
+    check(`first Play ${label}: plays`, mf.advanced >= 3 && !mf.err && /Live/.test(st ?? ''), `advanced ${mf.advanced.toFixed(1)}s in ${mf.wall.toFixed(1)}s, ${st}`);
     await fresh.close();
   }
 
