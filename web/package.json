@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "typecheck": "tsc",
     "e2e": "node e2e/radio.mjs",
-    "size": "node scripts/check-size.mjs"
+    "size": "node scripts/check-size.mjs",
+    "perf": "node scripts/perf.mjs"
   },
   "keywords": [],
   "author": "",
