@@ -92,6 +92,7 @@ try {
   await page.waitForFunction(() => !document.querySelector('[aria-label="I like this track"]').disabled, null, { timeout: 5000 });
   const upCount = async () => Number((await up.textContent()).replace(/\D/g, '') || 0);
   const c0 = await upCount();
+  const trackAtVote = (await now.locator('p.text-lg').textContent())?.trim();
   await up.click();
   await page.waitForFunction(() => document.querySelector('[aria-label="I like this track"]').getAttribute('aria-pressed') === 'true');
   check('thumbs up registers', (await upCount()) === c0 + 1, `${c0} -> ${await upCount()}`);
@@ -101,10 +102,25 @@ try {
   // The UI updates optimistically; wait for the save to finish before reloading.
   await Promise.all([page.waitForResponse((r) => r.url().includes('/api/ratings') && r.request().method() === 'POST'), up.click()]);
   await page.waitForFunction(() => document.querySelector('[aria-label="I like this track"]').getAttribute('aria-pressed') === 'true');
-  await page.reload();
-  await page.getByRole('region', { name: 'Now playing' }).getByRole('button', { name: 'I like this track' }).waitFor();
-  await page.waitForFunction(() => document.querySelector('[aria-label="I like this track"]')?.getAttribute('aria-pressed') === 'true', null, { timeout: 8000 });
-  check('vote persists after reload (same listener id)', true);
+  // The station changes track every few minutes. If that happens between the vote and the reload, the new track has no
+  // vote to show, so vote on it and reload again (a second change in a row is practically impossible).
+  const likeLabel = '[aria-label="I like this track"]';
+  let persisted = false;
+  let tracksAtVote = [trackAtVote];
+  for (let attempt = 0; attempt < 3 && !persisted; attempt++) {
+    await page.reload();
+    await now.getByRole('button', { name: 'I like this track' }).waitFor();
+    const trackAfter = (await now.locator('p.text-lg').textContent())?.trim();
+    if (trackAfter === tracksAtVote.at(-1)) {
+      persisted = await page.waitForFunction((sel) => document.querySelector(sel)?.getAttribute('aria-pressed') === 'true', likeLabel, { timeout: 8000 }).then(() => true, () => false);
+      break;
+    }
+    tracksAtVote.push(trackAfter);
+    console.log(`      track changed during the vote test ("${tracksAtVote.at(-2)}" -> "${trackAfter}"), voting again`);
+    await page.waitForFunction((sel) => !document.querySelector(sel).disabled, likeLabel, { timeout: 5000 });
+    await Promise.all([page.waitForResponse((r) => r.url().includes('/api/ratings') && r.request().method() === 'POST'), now.getByRole('button', { name: 'I like this track' }).click()]);
+  }
+  check('vote persists after reload (same listener id)', persisted, tracksAtVote.join(' -> '));
   await page.getByRole('button', { name: 'I like this track' }).click();
   await page.waitForFunction(() => document.querySelector('[aria-label="I like this track"]').getAttribute('aria-pressed') === 'false');
   check('tapping own vote clears it', true);
