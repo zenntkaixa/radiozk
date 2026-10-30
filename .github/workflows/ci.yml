@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  schedule:
+    - cron: '23 5 * * 1'   # weekly: only the audit runs; new advisories appear even when the code doesn't change
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: radiozk
+          POSTGRES_PASSWORD: radiozk
+          POSTGRES_DB: radiozk
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U radiozk"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The API tests create and use their own throwaway databases on this server.
+      ADMIN_DATABASE_URL: postgresql://radiozk:radiozk@127.0.0.1:5432/radiozk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            web/package-lock.json
+      - run: npm ci
+        working-directory: app
+      - run: npm ci
+        working-directory: web
+      - name: Type check and build
+        run: npm run build
+        working-directory: web
+      - name: Backend tests (unit, API, security)
+        run: npm test
+        working-directory: app
+      - name: Frontend tests (parser, UI)
+        run: npm test
+        working-directory: web
+
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: npm audit (fails on high and above)
+        run: bin/audit.sh
+
+  docker:
+    name: docker
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and smoke-test the production images
+        run: bin/docker-smoke.sh
+
+  # One check to require in branch protection: green only when every job that should run has passed.
+  ci:
+    name: ci
+    if: always()
+    needs: [test, audit, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every job to pass
+        run: |
+          echo "test=${{ needs.test.result }} audit=${{ needs.audit.result }} docker=${{ needs.docker.result }}"
+          [ "${{ needs.audit.result }}" = success ] || exit 1
+          if [ "${{ github.event_name }}" != schedule ]; then
+            [ "${{ needs.test.result }}" = success ] && [ "${{ needs.docker.result }}" = success ] || exit 1
+          fi
