@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CDN_BASE } from '../src/config.ts';
+import { CDN_BASE, METADATA_URL } from '../src/config.ts';
 
 const web = (...p: string[]) => resolve(import.meta.dirname, '..', ...p);
 const html = readFileSync(web('index.html'), 'utf8');
@@ -20,5 +20,12 @@ describe('index.html', () => {
     const href = icon?.match(/href="([^"]+)"/)?.[1];
     expect(href).toBeTruthy();
     expect(() => readFileSync(web('public', (href ?? '').replace(/^\//, '')))).not.toThrow();
+  });
+
+  it('starts the metadata request early, for the same URL as the poll in nowPlaying.ts', () => {
+    const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join('\n');
+    expect(inline).toContain('window.__earlyMetadata');
+    expect(inline).toContain(`fetch('${METADATA_URL}'`);
+    expect(inline).toContain("cache: 'no-store'");
   });
 });

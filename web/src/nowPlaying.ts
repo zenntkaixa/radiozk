@@ -43,6 +43,20 @@ export function parse(raw: Record<string, unknown>): NowPlaying {
   };
 }
 
+declare global {
+  interface Window {
+    /** Started by the inline script in index.html; resolves to the parsed JSON, or null if the request failed. */
+    __earlyMetadata?: Promise<Record<string, unknown> | null>;
+  }
+}
+
+/** The early request is used at most once; later polls (and a remount) fetch normally. */
+function takeEarlyMetadata() {
+  const early = window.__earlyMetadata;
+  delete window.__earlyMetadata;
+  return early;
+}
+
 /** Polls the station metadata; pauses while the tab is hidden. `error` is true while the last fetch failed. */
 export function useNowPlaying() {
   const [data, setData] = useState<NowPlaying | null>(null);
@@ -52,14 +66,23 @@ export function useNowPlaying() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let ctrl: AbortController | undefined;
 
+    let early = takeEarlyMetadata();
+
     async function tick() {
       clearTimeout(timer);
       ctrl?.abort();
       ctrl = new AbortController();
+      const { signal } = ctrl;
       try {
-        const res = await fetch(METADATA_URL, { signal: ctrl.signal, cache: 'no-store' });
-        if (!res.ok) throw new Error(String(res.status));
-        const next = parse((await res.json()) as Record<string, unknown>);
+        let raw = early ? await early : null;
+        early = undefined;
+        if (signal.aborted) return;
+        if (!raw) {
+          const res = await fetch(METADATA_URL, { signal, cache: 'no-store' });
+          if (!res.ok) throw new Error(String(res.status));
+          raw = (await res.json()) as Record<string, unknown>;
+        }
+        const next = parse(raw);
         setData((prev) => (prev && prev.coverUrl === next.coverUrl && prev.previous.length === next.previous.length ? prev : next));
         setError(false);
       } catch (e) {

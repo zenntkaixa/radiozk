@@ -10,6 +10,14 @@
          fetch/XHR (metadata, HLS) and <img> (cover) use separate connection pools. -->
     <link rel="preconnect" href="https://d3d4yli4hf5bmh.cloudfront.net" crossorigin />
     <link rel="preconnect" href="https://d3d4yli4hf5bmh.cloudfront.net" />
+    <!-- Start the metadata request now instead of after the JS has loaded and the page has rendered (the cover can only
+         start once it answers). useNowPlaying() takes this promise over once, on its first poll. URL and fetch options
+         must match METADATA_URL / the poll in src/nowPlaying.ts (test/indexHtml.test.ts checks the URL). -->
+    <script>
+      window.__earlyMetadata = fetch('https://d3d4yli4hf5bmh.cloudfront.net/metadatav2.json', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    </script>
   </head>
   <body>
     <div id="root"></div>
