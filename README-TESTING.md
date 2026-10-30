@@ -120,6 +120,8 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 | `test` | `npm ci`, then `npm run build` in `web/` (type check, which includes the tests, plus the production build) and `npm run size` (bundle size budget), then `npm test` in `app/` against a `postgres:18` service container (backend unit, API **and security tests**), then `npm test` in `web/` (parser and UI tests) | push, PR |
 | `audit` | `bin/audit.sh`: `npm audit` in `app/` and `web/`, fails on high and above | push, PR, weekly |
 | `docker` | `bin/docker-smoke.sh`: builds the production images and checks them end to end | push, PR |
+| `trivy` | builds the `api` and `web` images and scans them (OS packages, dependencies, secrets) plus the Dockerfile and compose files with Trivy; fails on fixable HIGH/CRITICAL findings | push, PR, weekly |
+| `CodeQL` (own workflow, `codeql.yml`) | static analysis of the JavaScript/TypeScript code; results under Security > Code scanning, not part of the `ci` gate | push, PR, weekly |
 | `ci` | Gate: green only when `audit` passed and, outside the weekly run, `test` and `docker` passed too | always |
 
 The weekly run executes only `audit`, because new advisories appear without any code change; a failure there shows up as a failed run on `main`'s Actions page. Require the single `ci` check in branch protection instead of listing each job.
