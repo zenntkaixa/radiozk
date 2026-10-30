@@ -37,7 +37,7 @@ jobs:
       ADMIN_DATABASE_URL: postgresql://radiozk:radiozk@127.0.0.1:5432/radiozk
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: npm audit (fails on high and above)
