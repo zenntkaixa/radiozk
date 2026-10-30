@@ -29,9 +29,9 @@ browser ──> nginx :8080 ──> static files from www/     (SPA fallback to 
 dev:  browser ──> Vite :5173 ──(proxies /api)──> Node :3000
 ```
 
-The same system as a diagram (rendered by GitHub):
+The same system as a [Mermaid](https://mermaid.js.org/) diagram. GitHub does not render it here: copy the code below into any Mermaid-compatible viewer to preview and read it, for example the online editor at <https://mermaid.live>, or a Mermaid preview extension in your editor (it also works as a `.mmd` / `.md` file).
 
-```mermaid
+```text
 flowchart LR
     subgraph Browser["Browser (listener)"]
         SPA["React SPA<br/>Vite · TS · Tailwind · React Router"]
