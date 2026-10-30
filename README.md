@@ -2,7 +2,7 @@
 
 A local prototype web radio player for the public [Radio Calico](https://d3d4yli4hf5bmh.cloudfront.net/hls/live.m3u8) lossless HLS stream, with a "Now playing" panel and listener thumbs up/down ratings stored in your own database.
 
-It is a development prototype, not a production service. Everything runs as the current user from the project directory: no root, no system services, no Docker.
+It is a development prototype, not a production service. Everything runs as the current user from the project directory: no root, no system services (Docker is optional, see below).
 
 ## Features
 
@@ -16,7 +16,7 @@ It is a development prototype, not a production service. Everything runs as the 
 | Layer | Technology |
 |---|---|
 | Front end | Vite, React 19, TypeScript, Tailwind CSS v4, React Router, hls.js |
-| API | Node.js 24, Express 5, `pg` |
+| API | Node.js 26, Express 5, `pg` |
 | Database | PostgreSQL 18 |
 | Web server | nginx (static files + `/api` reverse proxy) |
 | Tests | `node:test` (API, validation, parser), Vitest + Testing Library (UI), Playwright + Firefox (end-to-end), GitHub Actions CI |
@@ -166,7 +166,7 @@ A track is identified by its lower-cased `artist|title` with whitespace collapse
 - Ratings are anonymous and only lightly protected: votes are limited per IP address (120 reads and 20 votes a minute, in memory), which stops casual flooding but not an attacker who rotates addresses. Votes are lost if the browser's storage is cleared. If you put a TLS proxy in front of nginx, every client shares its address unless it forwards the real one (see `TRUST_PROXY` in `app/src/rateLimit.js`).
 - Playback is tested in Firefox and Chromium (Playwright, headless). Safari/iOS native HLS playback has not been tested.
 - The first play rebuffers for about 2 seconds before settling at real time.
-- The brand style guide is not applied to the UI yet.
+- The UI deliberately does not follow the Radio Calico brand style guide.
 
 ## Third-party content
 

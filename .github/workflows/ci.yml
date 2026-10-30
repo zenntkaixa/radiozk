@@ -5,7 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
   schedule:
-    - cron: '23 5 * * 1'   # weekly: only the audit runs; new advisories appear even when the code doesn't change
+    - cron: '23 5 * * 1'   # weekly: only audit and trivy run; new advisories appear even when the code doesn't change
 
 permissions:
   contents: read
