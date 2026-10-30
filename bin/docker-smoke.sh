@@ -47,4 +47,12 @@ check "vote survives db restart" '{"up":1,"down":0,"mine":1}' "$after"
 # nginx must follow the api container when it is recreated (new address), not keep a stale one
 docker compose up -d --force-recreate --no-deps --wait --wait-timeout 60 api >/dev/null
 check "proxy follows recreated api" 200 "$(status "$BASE/api/health")"
+# Rate limiting through the real stack. The API was just recreated, so its counters are empty. nginx overwrites
+# X-Forwarded-For, so forged addresses must not buy extra votes: 30 votes with 30 different forged addresses still hit 429.
+limited=0
+for i in $(seq 1 30); do
+  [ "$(status -X POST "$BASE/api/ratings" -H "x-listener-id: $(cat /proc/sys/kernel/random/uuid)" -H "x-forwarded-for: 203.0.113.$i" \
+    -H 'content-type: application/json' -d '{"artist":"Smoke","title":"Flood","value":1}')" = 429 ] && limited=$((limited + 1))
+done
+check "forged X-Forwarded-For does not dodge the rate limit" yes "$([ "$limited" -ge 5 ] && echo yes || echo "no ($limited of 30 limited)")"
 echo "docker smoke test passed"

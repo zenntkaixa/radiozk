@@ -103,17 +103,80 @@ test('unknown API routes and methods do not leak internals', async () => {
   }
 });
 
-// ---- Accepted, documented gaps: there is no rate limiting and no binding of a vote to anything but a
-// client-chosen random id (no IP / fingerprint). Discussed and postponed; these tests pin today's behaviour. ----
+// ---- Rate limiting (src/rateLimit.js). Own servers with tiny limits; the main server above has generous ones. ----
+// The tests give each "client" its own address with X-Forwarded-For, which a server that trusts its peer (the default
+// trusts loopback, i.e. nginx) honours, so every test starts with a fresh budget.
 
-test('KNOWN GAP: one listener can rate many tracks without being throttled', async () => {
-  const me = randomUUID();
-  const results = await Promise.all(Array.from({ length: 60 }, () => post({ ...track(), value: 1 }, {}, me)));
-  assert.ok(results.every((r) => r.status === 200), 'no request was rate limited');
+const LIMITS = { RATE_LIMIT_WRITE: '5', RATE_LIMIT_READ: '8' };
+let limited; // trusts X-Forwarded-For from loopback (like production behind nginx)
+let untrusting; // TRUST_PROXY=false: a client cannot choose its own address
+before(async () => {
+  limited = await startTestServer({ port: 3102, db: 'radiozk_test_security_rl', env: LIMITS });
+  untrusting = await startTestServer({ port: 3103, db: 'radiozk_test_security_rl', env: { ...LIMITS, TRUST_PROXY: 'false' } });
+});
+after(() => {
+  limited?.stop();
+  untrusting?.stop();
 });
 
-test('KNOWN GAP: unlimited fresh listener ids can inflate one track (ballot stuffing)', async () => {
+const vote = (server, ip, body = { ...track(), value: 1 }) =>
+  fetch(`${server.base}/api/ratings`, {
+    method: 'POST',
+    headers: { 'x-listener-id': randomUUID(), 'content-type': 'application/json', 'x-forwarded-for': ip },
+    body: JSON.stringify(body),
+  });
+const read = (server, ip, t = { artist: 'a', title: 'b' }) =>
+  fetch(`${server.base}/api/ratings?${new URLSearchParams(t)}`, { headers: { 'x-listener-id': randomUUID(), 'x-forwarded-for': ip } });
+const statuses = async (n, fn) => {
+  const out = [];
+  for (let i = 0; i < n; i++) out.push((await fn(i)).status);
+  return out;
+};
+
+test('votes beyond the per-address limit get 429 with Retry-After and a JSON error', async () => {
+  const ip = '203.0.113.10';
+  assert.deepEqual(await statuses(7, () => vote(limited, ip)), [200, 200, 200, 200, 200, 429, 429]);
+  const res = await vote(limited, ip);
+  assert.equal(res.status, 429);
+  assert.ok(Number(res.headers.get('retry-after')) > 0, 'Retry-After is set');
+  assert.ok(res.headers.get('ratelimit'), 'RateLimit header is set');
+  assert.deepEqual(await res.json(), { error: 'too many requests' });
+});
+
+test('reads have their own, separate budget', async () => {
+  const ip = '203.0.113.11';
+  assert.deepEqual(await statuses(9, () => read(limited, ip)), [200, 200, 200, 200, 200, 200, 200, 200, 429]);
+  assert.equal((await vote(limited, ip)).status, 200, 'writes are not affected by the exhausted read budget');
+});
+
+test('the limit is per address: another address is unaffected', async () => {
+  await statuses(7, () => vote(limited, '203.0.113.12'));
+  assert.equal((await vote(limited, '203.0.113.13')).status, 200);
+});
+
+test('one address cannot stuff a track with fresh listener ids beyond the limit', async () => {
   const t = track();
-  await Promise.all(Array.from({ length: 40 }, () => post({ ...t, value: 1 })));
-  assert.equal((await (await get(new URLSearchParams(t))).json()).up, 40);
+  const codes = await statuses(12, () => vote(limited, '203.0.113.14', { ...t, value: 1 }));
+  assert.equal(codes.filter((c) => c === 200).length, 5);
+  assert.equal((await (await read(limited, '203.0.113.99', t)).json()).up, 5);
+});
+
+test('a client that is not behind a trusted proxy cannot dodge the limit by forging X-Forwarded-For', async () => {
+  const codes = await statuses(12, (i) => vote(untrusting, `198.51.100.${i + 1}`));
+  assert.equal(codes.filter((c) => c === 200).length, 5);
+  assert.equal(codes.filter((c) => c === 429).length, 7);
+});
+
+test('the health check is not rate limited', async () => {
+  const codes = await statuses(15, () => fetch(`${limited.base}/api/health`));
+  assert.ok(codes.every((c) => c === 200));
+});
+
+// ---- Accepted, documented gap: a vote is tied only to a client-chosen random id and an IP address. ----
+
+test('KNOWN GAP: many distinct addresses can still inflate one track (distributed ballot stuffing)', async () => {
+  const t = track();
+  const codes = await statuses(12, (i) => vote(limited, `192.0.2.${i + 1}`, { ...t, value: 1 }));
+  assert.ok(codes.every((c) => c === 200), 'no address exceeded its own limit');
+  assert.equal((await (await read(limited, '192.0.2.200', t)).json()).up, 12);
 });

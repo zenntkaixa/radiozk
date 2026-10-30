@@ -46,10 +46,13 @@ www/      production build output (generated, git-ignored)
 
 ### Toolchain
 
-The scripts expect Node, nginx and PostgreSQL under a git-ignored `.local/` directory (extracted `.deb` packages and the Node tarball). **Nothing recreates `.local/` automatically**, so on a fresh clone you must either:
+The scripts expect Node, nginx and PostgreSQL under a git-ignored `.local/` directory. On a fresh clone, create it with:
 
-- provide those binaries in `.local/` the same way, or
-- install Node 26 (the current LTS), nginx and PostgreSQL 18 yourself and adjust the paths in `bin/env.sh` (and the `mime.types` lookup in `bin/start.sh`).
+```sh
+bin/setup.sh      # or: make setup
+```
+
+It needs no root. It downloads Node 26 from nodejs.org (checksum-verified), downloads nginx and PostgreSQL 18 with `apt-get download` and unpacks them into `.local/root`, initialises the database directory (`dev/pgdata`), and runs `npm ci` in `app/` and `web/`. It is idempotent (re-running skips what is there; `--force` redoes the toolchain) and prints the installed versions at the end. Requirements: Linux x86_64 on Ubuntu or Debian with PostgreSQL 18 available to apt (Ubuntu 26.04 has it), a current package index (`sudo apt-get update` once, if nobody has done it), `tzdata`, `curl`, `xz` and `dpkg-deb`. On any other system, install Node 26, nginx and PostgreSQL 18 yourself and adjust the paths in `bin/env.sh` (and the `mime.types` lookup in `bin/start.sh`).
 
 All ports and database credentials are defined once in `bin/env.sh`.
 
@@ -120,6 +123,7 @@ After changing `package.json` or a lockfile, add `--build -V` so the `node_modul
 
 | Task | Command |
 |---|---|
+| Create the `.local/` toolchain (fresh clone) | `bin/setup.sh` (or `make setup`) |
 | Start / stop PostgreSQL + nginx | `bin/start.sh` / `bin/stop.sh` |
 | API with auto-reload | `bin/app.sh` |
 | Vite dev server | `bin/web.sh` |
@@ -159,7 +163,7 @@ A track is identified by its lower-cased `artist|title` with whitespace collapse
 
 ## Known limitations
 
-- Ratings are anonymous and spoofable: there is no IP or fingerprint binding and no rate limiting. Votes are lost if the browser's storage is cleared.
+- Ratings are anonymous and only lightly protected: votes are limited per IP address (120 reads and 20 votes a minute, in memory), which stops casual flooding but not an attacker who rotates addresses. Votes are lost if the browser's storage is cleared. If you put a TLS proxy in front of nginx, every client shares its address unless it forwards the real one (see `TRUST_PROXY` in `app/src/rateLimit.js`).
 - Safari/iOS native HLS playback has not been tested.
 - The first play rebuffers for about 2 seconds before settling at real time.
 - The brand style guide is not applied to the UI yet.

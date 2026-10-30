@@ -13,7 +13,7 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 42 backend (11 unit + 18 API + 13 security), 13 parser, 70 UI, 25 e2e checks.
+Current counts: 49 backend (13 unit + 18 API + 18 security), 13 parser, 70 UI, 25 e2e checks.
 
 The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks the security headers on pages, assets, API and error responses, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
@@ -145,7 +145,9 @@ The other two workflows in `.github/workflows/` belong to the Claude GitHub App 
 - SQL injection payloads in `artist`, `title` and the listener-id header are treated as data, and the table survives
 - one listener can't read or clear another listener's vote
 
-**Known, accepted gaps.** There is no rate limiting, and a vote is tied only to a random id the client chooses (no IP or fingerprint binding). This was discussed and postponed. Two tests named `KNOWN GAP` pin today's behaviour: one listener can rate many tracks without throttling, and unlimited fresh listener ids can inflate one track's count. If you add rate limiting, those tests will fail: change them to assert the new protection and remove the gap from this list.
+**Rate limiting.** The ratings endpoints are limited per client address (`app/src/rateLimit.js`: 120 reads and 20 votes per minute, in memory; `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RATE_LIMIT_WINDOW_MS` change them, `TRUST_PROXY` says which peers may set `X-Forwarded-For`). The security tests start two extra servers with tiny limits (ports 3102 and 3103, database `radiozk_test_security_rl`) and give each simulated client its own address through `X-Forwarded-For`; they check the 429 with `Retry-After`, separate read and write budgets, per-address isolation, that one address cannot stuff a track, that a client of a server that trusts no proxy cannot forge its address, and that the health check is exempt. The Docker smoke test checks the same through the real nginx: forged `X-Forwarded-For` values must not buy extra votes (nginx overwrites the header).
+
+**Known, accepted gap.** A vote is tied only to a random id the client chooses and to an IP address, so many distinct addresses can still inflate one track (distributed ballot stuffing). One test named `KNOWN GAP` pins that. If you add stronger protection (accounts, proof of work), that test will fail: change it to assert the new protection and remove the gap from this list.
 
 Not covered: image scanning (Trivy), static analysis (CodeQL), HTTP security headers on nginx (CSP, `X-Content-Type-Options`, etc.), and TLS, which the Docker setup leaves to a proxy in front.
 
@@ -154,4 +156,4 @@ Not covered: image scanning (Trivy), static analysis (CodeQL), HTTP security hea
 - Safari/iOS native HLS playback is not tested; it needs a Mac or iPhone.
 - Audible output is not tested.
 - The playback hook (`useRadioStream`) and `NowPlaying` are covered only by the e2e script, not by unit tests.
-- Ratings are not hardened against abuse, so there are no tests for rate limiting or spoofing.
+- Rate limits are per address and in memory: they reset when the API restarts, and they do not stop an attacker who rotates addresses. Behind a second proxy (for example a TLS terminator in front of nginx) every client shares that proxy's address unless the proxy passes the real one on.
