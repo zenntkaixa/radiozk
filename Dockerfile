@@ -42,7 +42,8 @@ WORKDIR /srv/web
 RUN chown node:node /srv/web
 USER node
 COPY --chown=node:node web/package.json web/package-lock.json ./
-RUN npm ci
+# npm can exit 0 while skipping the native rolldown binding (npm/cli#4828); fail here instead of at `vite build`
+RUN npm ci && node --input-type=module -e "await import('rolldown')"
 
 FROM web-base AS dev-web
 COPY --chown=node:node web/ ./
