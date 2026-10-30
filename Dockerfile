@@ -61,6 +61,7 @@ RUN npm run build        # tsc && vite build, writes to ../www (/srv/www)
 FROM ${NGINX_IMAGE} AS web
 ENV API_UPSTREAM=api:3000 RESOLVER=127.0.0.11
 COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/security-headers.conf /etc/nginx/security-headers.conf
 COPY --from=web-build /srv/www /usr/share/nginx/html
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
