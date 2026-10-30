@@ -110,6 +110,31 @@ try {
   check('tapping own vote clears it', true);
   await page.screenshot({ path: `${shots}/3-rated.png`, fullPage: true });
 
+  // --- first Play, both ways: the player library is loaded in the background ~2s after the page settles ---
+  // (a) Play pressed before it exists: the hook loads it, waits for the manifest, then calls play() outside the click.
+  // (b) Play pressed after it is ready: the click starts playback directly.
+  for (const [label, waitForLibrary] of [['before the player library is loaded', false], ['after the player library is ready', true]]) {
+    const fresh = await browser.newContext({ viewport: { width: 900, height: 1100 } });
+    const p = await fresh.newPage();
+    await p.goto(base);
+    const playBtn = p.getByRole('button', { name: 'Play' });
+    await playBtn.waitFor({ timeout: 10000 });
+    const libraryLoaded = () => p.evaluate(() => performance.getEntriesByType('resource').some((r) => /hls\.light/.test(r.name)));
+    if (waitForLibrary) await p.waitForFunction(() => performance.getEntriesByType('resource').some((r) => /hls\.light/.test(r.name)), null, { timeout: 15000 }).catch(() => {});
+    const loadedAtClick = await libraryLoaded();
+    check(`first Play ${label}: tests the intended path`, loadedAtClick === waitForLibrary, `library loaded at click: ${loadedAtClick}`);
+    await playBtn.click();
+    await p.waitForFunction(() => { const a = document.querySelector('audio'); return a && !a.paused && a.readyState >= 3; }, null, { timeout: 40000 }).catch(() => {});
+    await p.waitForTimeout(4000); // startup rebuffer
+    const at = () => p.evaluate(() => document.querySelector('audio').currentTime);
+    const a0 = await at();
+    await p.waitForTimeout(4000);
+    const advancedFresh = (await at()) - a0;
+    const st = (await p.getByRole('status').textContent())?.replace(/\s+/g, ' ').trim();
+    check(`first Play ${label}: plays`, advancedFresh > 3.4 && /Live/.test(st ?? ''), `advanced ${advancedFresh.toFixed(1)}s in 4s, ${st}`);
+    await fresh.close();
+  }
+
   // --- routing / deep links ---
   await page.goto(`${base}/about`);
   check('deep link /about works', await page.getByRole('heading', { name: 'About' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
