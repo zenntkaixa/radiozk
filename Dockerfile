@@ -4,7 +4,7 @@
 #   web      production web            (nginx serving the built front end, proxying /api)
 #   dev-api  development API           (all dependencies, node --watch; source is bind-mounted)
 #   dev-web  development front end     (Vite dev server with HMR; source is bind-mounted)
-ARG NODE_IMAGE=node:24-alpine
+ARG NODE_IMAGE=node:26-alpine
 ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.28-alpine
 
 # ---------- API ----------
