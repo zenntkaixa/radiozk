@@ -69,6 +69,7 @@ USER root
 RUN apk upgrade --no-cache
 USER nginx
 COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/security-headers.conf /etc/nginx/security-headers.conf
 COPY --from=web-build /srv/www /usr/share/nginx/html
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
