@@ -14,12 +14,13 @@ The toolchain is **not installed system-wide**. Node, nginx and PostgreSQL live 
 source bin/env.sh
 ```
 
-Shell state does not persist between tool calls, so source it in the same command (`source bin/env.sh && npm ...`). `env.sh` also holds the ports and DB credentials. The project targets Node 26 (LTS from 2026-10-28): the host `.local/node` is 26.13.0, and the Dockerfile, CI and `@types/node` use 26 too. Node 24 still works (it was the previous version, and the suites passed on both), so don't rely on 26-only behaviour such as `node --test <dir>`. Nothing recreates `.local/` automatically; a fresh clone would need those downloaded again.
+Shell state does not persist between tool calls, so source it in the same command (`source bin/env.sh && npm ...`). `env.sh` also holds the ports and DB credentials. The project targets Node 26 (LTS from 2026-10-28): the host `.local/node` is 26.13.0, and the Dockerfile, CI and `@types/node` use 26 too. Node 24 still works (it was the previous version, and the suites passed on both), so don't rely on 26-only behaviour such as `node --test <dir>`. `bin/setup.sh` (`make setup`) recreates `.local/` on a fresh clone without root: Node tarball (sha256-checked), nginx and PostgreSQL via `apt-get download` + `dpkg-deb -x` into `.local/root` (the packages the host lacks are found with `apt-get -s install`), `initdb` for `dev/pgdata`, `npm ci`. Idempotent; `--force` redoes the toolchain. Bump `NODE_VERSION` in it together with the Dockerfile, ci.yml and `@types/node`. Tested in a bare `ubuntu:26.04` container as a non-root user; it needs `tzdata` on the host (PostgreSQL) and pulls `libatomic1` when missing (Node).
 
 ## Commands
 
 | Task | Command |
 |---|---|
+| Create `.local/` on a fresh clone (idempotent) | `bin/setup.sh` / `make setup` |
 | Start nginx + PostgreSQL (idempotent; reloads nginx if running) | `bin/start.sh` |
 | Stop nginx + PostgreSQL | `bin/stop.sh` |
 | Node API, auto-reload (foreground) | `bin/app.sh` (`app/`, `npm run dev`) |
