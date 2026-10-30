@@ -5,7 +5,7 @@ import pg from 'pg';
 const ADMIN_URL = process.env.ADMIN_DATABASE_URL ?? 'postgresql://radiozk:radiozk@127.0.0.1:5433/radiozk';
 
 /** Each test file uses its own port and database so files can run in parallel. */
-export async function startTestServer({ port, db }) {
+export async function startTestServer({ port, db, env = {} }) {
   const base = `http://127.0.0.1:${port}`;
   const admin = new pg.Client({ connectionString: ADMIN_URL });
   await admin.connect();
@@ -24,7 +24,8 @@ export async function startTestServer({ port, db }) {
   await admin.end();
 
   const server = spawn(process.execPath, ['src/server.js'], {
-    env: { ...process.env, DATABASE_URL: ADMIN_URL.replace(/\/[^/]+$/, `/${db}`), APP_PORT: String(port) },
+    // Generous rate limits by default: a test file sends many requests from one address. Rate-limit tests override them.
+    env: { ...process.env, RATE_LIMIT_READ: '100000', RATE_LIMIT_WRITE: '100000', DATABASE_URL: ADMIN_URL.replace(/\/[^/]+$/, `/${db}`), APP_PORT: String(port), ...env },
     stdio: ['ignore', 'ignore', 'inherit'],
   });
   for (let i = 0; i < 50; i++) {
