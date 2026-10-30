@@ -4,7 +4,7 @@
 #   web      production web            (nginx serving the built front end, proxying /api)
 #   dev-api  development API           (all dependencies, node --watch; source is bind-mounted)
 #   dev-web  development front end     (Vite dev server with HMR; source is bind-mounted)
-ARG NODE_IMAGE=node:24-alpine
+ARG NODE_IMAGE=node:26-alpine
 ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.28-alpine
 
 # ---------- API ----------
@@ -42,7 +42,8 @@ WORKDIR /srv/web
 RUN chown node:node /srv/web
 USER node
 COPY --chown=node:node web/package.json web/package-lock.json ./
-RUN npm ci
+# npm can exit 0 while skipping the native rolldown binding (npm/cli#4828); fail here instead of at `vite build`
+RUN npm ci && node --input-type=module -e "await import('rolldown')"
 
 FROM web-base AS dev-web
 COPY --chown=node:node web/ ./

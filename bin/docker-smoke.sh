@@ -3,10 +3,12 @@
 # Needs only docker (no bin/env.sh). Uses its own project name, port and throwaway volume.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export COMPOSE_PROJECT_NAME=radiozk-smoke POSTGRES_PASSWORD=smoke-test WEB_PORT=${WEB_PORT:-18080}
+# TAG=smoke keeps the images off the production names (radiozk-api:latest), which a real deployment may be using.
+export COMPOSE_PROJECT_NAME=radiozk-smoke POSTGRES_PASSWORD=smoke-test TAG=smoke WEB_PORT=${WEB_PORT:-18080}
 BASE="http://127.0.0.1:$WEB_PORT"
-trap 'docker compose logs --tail=30 >&2 || true; docker compose down -v >/dev/null 2>&1' ERR
-trap 'docker compose down -v >/dev/null 2>&1' EXIT
+cleanup() { docker compose down -v >/dev/null 2>&1; docker image rm radiozk-api:smoke radiozk-web:smoke >/dev/null 2>&1 || true; }
+trap 'docker compose logs --tail=30 >&2 || true; cleanup' ERR
+trap cleanup EXIT
 
 docker compose up -d --build --wait --wait-timeout 120
 
