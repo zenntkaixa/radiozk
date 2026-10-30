@@ -1,9 +1,11 @@
 import express from 'express';
 import { pool, migrate } from './db.js';
 import ratings from './routes/ratings.js';
+import { trustProxySetting } from './rateLimit.js';
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', trustProxySetting()); // req.ip comes from X-Forwarded-For only when nginx (a trusted peer) sent it
 app.use(express.json());
 
 app.get('/api/health', async (_req, res) => {

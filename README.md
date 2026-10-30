@@ -163,7 +163,7 @@ A track is identified by its lower-cased `artist|title` with whitespace collapse
 
 ## Known limitations
 
-- Ratings are anonymous and spoofable: there is no IP or fingerprint binding and no rate limiting. Votes are lost if the browser's storage is cleared.
+- Ratings are anonymous and only lightly protected: votes are limited per IP address (120 reads and 20 votes a minute, in memory), which stops casual flooding but not an attacker who rotates addresses. Votes are lost if the browser's storage is cleared. If you put a TLS proxy in front of nginx, every client shares its address unless it forwards the real one (see `TRUST_PROXY` in `app/src/rateLimit.js`).
 - Safari/iOS native HLS playback has not been tested.
 - The first play rebuffers for about 2 seconds before settling at real time.
 - The brand style guide is not applied to the UI yet.
