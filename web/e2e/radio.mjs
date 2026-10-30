@@ -1,5 +1,6 @@
-// End-to-end check of the Radio page in Firefox (Playwright). Usage: node e2e/radio.mjs [baseUrl]
-import { firefox } from 'playwright';
+// End-to-end check of the Radio page (Playwright). Usage: [BROWSER=chromium] node e2e/radio.mjs [baseUrl]
+// Firefox is the default; BROWSER=chromium runs the same checks in Chromium (needs: npx playwright install chromium).
+import { chromium, firefox } from 'playwright';
 
 const base = process.argv[2] ?? 'http://localhost:8080';
 const shots = process.env.SHOTS ?? '/tmp/claude-1000/shots';
@@ -25,7 +26,8 @@ async function mediaAdvance(p, seconds, timeoutMs) {
   return { advanced: last.t - first.t, wall: (Date.now() - start) / 1000, paused: last.paused, err: last.err };
 }
 
-const browser = await firefox.launch({ headless: true });
+const engine = process.env.BROWSER === 'chromium' ? chromium : firefox;
+const browser = await engine.launch({ headless: true });
 const ctx = await browser.newContext({ viewport: { width: 900, height: 1100 } });
 const page = await ctx.newPage();
 const problems = [];
@@ -92,7 +94,8 @@ try {
   // --- pause / resume ---
   await page.getByRole('button', { name: 'Pause' }).click();
   await page.waitForFunction(() => document.querySelector('audio').paused, null, { timeout: 5000 });
-  check('pause works', /Paused/.test((await status.textContent()) ?? ''));
+  // `audio.paused` flips at once, but the status text follows from the `pause` event, so wait for it instead of reading it.
+  check('pause works', await page.waitForFunction(() => /Paused/.test(document.querySelector('[role=status]')?.textContent ?? ''), null, { timeout: 5000 }).then(() => true, () => false));
 
   // --- AAC fallback switch ---
   await page.getByLabel('Compatibility (AAC)').check();
