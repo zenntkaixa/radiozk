@@ -10,6 +10,10 @@ updates:
     directory: /web
     target-branch: develop
     schedule: { interval: weekly }
+    ignore:
+      # keep the types on the runtime's major (Node 26); raise this together with the Dockerfile and CI
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
     groups:
       minor-and-patch: { update-types: [minor, patch] }
   - package-ecosystem: docker
