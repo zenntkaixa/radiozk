@@ -73,6 +73,18 @@ All on `https://d3d4yli4hf5bmh.cloudfront.net` with open CORS:
 
 Thumbs up/down per track, stored in our own `ratings` table (primary key `(track_key, listener_id)`). `track_key` is lower-cased `artist|title` with whitespace collapsed, so a differently-titled release of the same song (e.g. "(2006 Remaster)") is a separate track. Listeners are anonymous: the browser keeps a random UUID in `localStorage` and sends it as `X-Listener-Id`. Votes are rate-limited per IP (see Security above) but not bound to a fingerprint or account.
 
+## Agent contract
+
+What the sub-agents (project ones in `.claude/agents/`, generic ones in `~/.claude/agents/`) read first, so they carry no project facts themselves. Keep this section short and let it point at the sections above.
+
+- **Commands:** build, test, run-one-test, e2e, size budget and perf are in *Commands*. Node is not on PATH: start every shell command with `source bin/env.sh`.
+- **Throwaway environment:** `COMPOSE_PROJECT_NAME=radiozk-e2e TAG=e2e WEB_PORT=18081 POSTGRES_PASSWORD=x docker compose up -d --build --wait --wait-timeout 240`, down with `docker compose down -v` (export the same variables in the same command). Control stack: `radiozk-ctl`, `TAG=ctl`, port 18082, from a worktree of `origin/develop`. The e2e casts real votes (API limit: 20 votes a minute per IP), so run it sequentially against one stack.
+- **Never touch:** the production compose project `radiozk` (containers `radiozk-api-1`, `radiozk-db-1`, `radiozk-web-1`, volume `radiozk_pgdata`, port 8080; only a read-only `curl /api/health`), `.env`, and the host development database unless the task is about it. Never call or probe the third-party station hosts or their ratings endpoint.
+- **Security tooling:** `bin/audit.sh` / `make security` (npm audit + security tests), Trivy locally (see *Image scanning* in Gotchas), CodeQL alerts with `gh api repos/zenntkaixa/radiozk/code-scanning/alerts`, Dependabot alerts with `gh api repos/zenntkaixa/radiozk/dependabot/alerts`.
+- **Accepted risks (do not re-report as new):** distributed ballot stuffing from many IPs (the one `KNOWN GAP` test in `app/test/security.test.js`); CodeQL alert #3 on `/api/health`, dismissed as "won't fix" because the Docker health check calls it every 10 s; rate limits are per IP and in memory (reset on restart), and behind a second proxy every client shares its address unless it forwards the real one.
+- **Gotchas agents must check:** the *Gotchas* section, in particular `add_header` inheritance and `always`, nginx overwriting `X-Forwarded-For`, the CSP hash of the inline script, the lazy hls.js chunk and size budget, idempotent migrations, and the untracked brand files (never `git add -A`).
+- **Git conventions:** branches from `develop`, PRs into `develop`, then `develop` → `main` release PRs; merge commits, not squash; commit trailer from the session; the user merges and decides when to push. Agents are read-only unless their job says otherwise, and never commit or push.
+
 ## Gotchas
 
 - `nginx_running` / `nginx_ctl` in `bin/env.sh` (used by `start.sh` and `stop.sh`) verify via `/proc/<pid>/comm` that the pid in nginx's pid file is really nginx before signalling it. After a reboot the stale pid can belong to an unrelated process; an earlier version signalled it. Never signal the pid file's pid without that check.
