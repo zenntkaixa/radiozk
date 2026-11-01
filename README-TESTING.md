@@ -7,13 +7,13 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 | Layer | Where | Tool | Needs | Speed |
 |---|---|---|---|---|
 | Backend unit | `app/test/validate.test.js`, `app/test/rateLimit.test.js` | `node:test` | nothing | milliseconds |
-| Backend API (integration) | `app/test/ratings.test.js` | `node:test` | PostgreSQL | seconds |
+| Backend API (integration) | `app/test/ratings.test.js`, `app/test/port.test.js` | `node:test` | PostgreSQL | seconds |
 | Backend security | `app/test/security.test.js` | `node:test` | PostgreSQL | seconds |
 | Frontend parser, size check | `web/test/nowPlaying.test.mjs`, `web/test/checkSize.test.mjs` | `node:test` | nothing | milliseconds |
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 49 backend (13 unit + 18 API + 18 security), 13 parser, 70 UI, 25 e2e checks.
+Current counts: 50 backend (13 unit + 19 API + 18 security), 13 parser, 77 UI, 25 e2e checks.
 
 The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks the security headers on pages, assets, API and error responses, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
@@ -103,6 +103,7 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 - `idle.test.ts`: `whenIdle` (delay, idle callback, waiting for images with a cap, cancelling) and `saveDataRequested`.
 - `useMediaSession.test.tsx`: the media session (and so the artwork download) stays untouched until playback has started, then follows track changes and keeps its metadata while paused.
 - `indexHtml.test.ts`: `index.html` preconnects to the same CDN host as `config.ts` (with and without CORS) its icon file exists in `public/`, and its inline early metadata request uses `METADATA_URL`.
+- `renderConfig.test.ts`: `render.yaml` equals what `scripts/render-config.mjs` generates from `docker/security-headers.conf`, wires the API to the database in one region, carries the same six headers, orders the `/api`, favicon and SPA rewrites, and publishes the directory Vite writes to. It parses the YAML with the `yaml` dev dependency. `port.test.js` (backend) checks the server listens on `PORT` when `APP_PORT` is unset.
 - `securityHeaders.test.ts`: `docker/security-headers.conf` pins the inline script of `index.html` by hash, allows only the station CDN, covers what the player needs (`blob:`, `data:`), and is included in every production nginx location, the image and the host config.
 - `useNowPlaying.test.tsx`: the hook uses the early request from `index.html` once without fetching again, and falls back to a normal fetch when it is missing or failed.
 

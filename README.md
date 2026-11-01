@@ -119,6 +119,17 @@ After changing `package.json` or a lockfile, add `--build -V` so the `node_modul
 
 `bin/docker-smoke.sh` builds the production images, starts them on a throwaway project, checks the endpoints, a vote round trip and recovery after a database restart, then tears everything down. CI runs it.
 
+## Render
+
+`render.yaml` is a Render Blueprint: a managed PostgreSQL database, the API as a Node web service (`app/`, `node src/server.js`, health check `/api/health`) and the front end as a static site on Render's CDN, with `/api/*` proxied to the API. It is generated from `docker/security-headers.conf` (`cd web && npm run render:config`), so the security headers keep one source of truth; a test fails when they drift.
+
+1. In Render choose *New > Blueprint*, connect this GitHub repository and apply `render.yaml`. Review the plan Render shows before it creates anything.
+2. When the services are live, open the static site's `*.onrender.com` URL and check `/api/health`.
+3. **Check that the rate limiter sees real visitors.** Request `/api/ratings?...` with a forged `X-Forwarded-For` header from two different networks, or watch whether a second visitor's votes count against the first one's 20 votes a minute. The API trusts one proxy hop (`TRUST_PROXY=1`); if the static site's `/api` proxy hides the visitor's address, all visitors share one bucket. Render's documentation does not say what it forwards, so this is not verified.
+4. The names in `render.yaml` are also the `onrender.com` subdomains. If one is taken, Render appends a suffix; then fix the `/api` rewrite destination (in `web/scripts/render-config.mjs`) and regenerate.
+
+Free plan limits (as documented by Render, check the current terms): a free web service spins down after 15 minutes without traffic and takes about a minute to wake, so the first vote after a quiet spell is slow (the page and the stream are not affected); a free database expires 30 days after creation (14 days of grace, then it is deleted) and has no backups, so move it to a paid plan before it matters. The in-memory rate limiter resets whenever the API sleeps. Existing ratings in the Docker database are not migrated.
+
 ## Scripts
 
 | Task | Command |
