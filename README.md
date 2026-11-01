@@ -119,6 +119,17 @@ After changing `package.json` or a lockfile, add `--build -V` so the `node_modul
 
 `bin/docker-smoke.sh` builds the production images, starts them on a throwaway project, checks the endpoints, a vote round trip and recovery after a database restart, then tears everything down. CI runs it.
 
+## Vercel
+
+The app can also run on Vercel: the front end as static files, the API as a Vercel Function (`api/index.mjs`, the same Express app as `app/src/server.js` without the listener), PostgreSQL hosted elsewhere (for example Neon through the Vercel Marketplace). `vercel.json` is generated from `docker/security-headers.conf` (`cd web && npm run vercel:config`), so the headers have one source of truth; a test fails when they drift.
+
+1. Create a hosted PostgreSQL database in the region you will give the function, and copy its **pooled** connection string.
+2. Import the GitHub repository in Vercel (framework preset "Other"; the build settings come from `vercel.json`). Set the production branch to `main`. Choose the highest Node.js version Vercel offers under Settings > General.
+3. Add the environment variables `DATABASE_URL` (the pooled string) and `TRUST_PROXY=1` (without it every visitor shares one rate-limit bucket). Optional: `PG_POOL_MAX` (default 10; a small value such as 3 suits serverless), `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`. Use a separate database (a Neon branch, for example) for Preview deployments so test votes stay out of production.
+4. Deploy. Check `/api/health`, then forge a header (`curl -H 'X-Forwarded-For: 1.2.3.4' .../api/ratings?...`) to confirm that the limiter keys on the real client address.
+
+Do not enable Vercel Web Analytics or Speed Insights: they inject a script the Content-Security-Policy blocks. The in-memory rate limiter counts per function instance and resets on a cold start, so on Vercel it is much weaker than on the single Docker API; add Vercel's firewall rate limit (Settings > Firewall) for `/api/ratings` if that matters. Existing ratings in the Docker database are not migrated.
+
 ## Scripts
 
 | Task | Command |
@@ -163,7 +174,7 @@ A track is identified by its lower-cased `artist|title` with whitespace collapse
 
 ## Known limitations
 
-- Ratings are anonymous and only lightly protected: votes are limited per IP address (120 reads and 20 votes a minute, in memory), which stops casual flooding but not an attacker who rotates addresses. Votes are lost if the browser's storage is cleared. If you put a TLS proxy in front of nginx, every client shares its address unless it forwards the real one (see `TRUST_PROXY` in `app/src/rateLimit.js`).
+- Ratings are anonymous and only lightly protected: votes are limited per IP address (120 reads and 20 votes a minute, in memory), which stops casual flooding but not an attacker who rotates addresses. Votes are lost if the browser's storage is cleared. If you put a TLS proxy in front of nginx, every client shares its address unless it forwards the real one (see `TRUST_PROXY` in `app/src/rateLimit.js`). On Vercel the counters are per function instance (see the Vercel section).
 - Playback is tested in Firefox and Chromium (Playwright, headless). Safari/iOS native HLS playback has not been tested.
 - The first play rebuffers for about 2 seconds before settling at real time.
 - The UI deliberately does not follow the Radio Calico brand style guide.

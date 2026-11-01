@@ -1,0 +1,9 @@
+# Keep CLI uploads small and private (Git-integration builds only see tracked files anyway)
+.local
+dev
+www
+node_modules
+.env
+.env.*
+RadioCalico*
+stream_URL.txt
