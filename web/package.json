@@ -13,7 +13,8 @@
     "e2e": "node e2e/radio.mjs",
     "e2e:chromium": "BROWSER=chromium node e2e/radio.mjs",
     "size": "node scripts/check-size.mjs",
-    "perf": "node scripts/perf.mjs"
+    "perf": "node scripts/perf.mjs",
+    "render:config": "node scripts/render-config.mjs"
   },
   "keywords": [],
   "author": "",
@@ -40,6 +41,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
   }
 }
