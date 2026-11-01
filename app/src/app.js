@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { pool } from './db.js';
 import ratings from './routes/ratings.js';
 import { trustProxySetting } from './rateLimit.js';
@@ -9,7 +10,14 @@ app.disable('x-powered-by');
 app.set('trust proxy', trustProxySetting()); // req.ip comes from X-Forwarded-For only when nginx (a trusted peer) sent it
 app.use(express.json());
 
-app.get('/api/health', async (_req, res) => {
+const healthLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.get('/api/health', healthLimiter, async (_req, res) => {
   const { rows } = await pool.query('select now() as db_time');
   res.json({ ok: true, ...rows[0] });
 });
