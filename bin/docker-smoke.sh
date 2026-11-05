@@ -28,10 +28,15 @@ for url in "$BASE/" "$BASE$ASSET" "$BASE/api/health" "$BASE/assets/missing.js"; 
   check "nosniff on ${url#$BASE}"  nosniff "$(header X-Content-Type-Options "$url")"
   check "CSP on ${url#$BASE}"      yes "$(header Content-Security-Policy "$url" | grep -q "frame-ancestors 'none'" && echo yes || echo no)"
 done
-# `compose port` prints ":0" for a port that is not published
-published() { local p; p=$(docker compose port "$@" 2>/dev/null || true); [ -z "$p" ] || [ "$p" = ":0" ] && echo no || echo yes; }
-check "api not published"    no "$(published api 3000)"
-check "db not published"     no "$(published db 5432)"
+# Ask Docker which ports the container publishes. `docker compose port` prints different things for an unpublished
+# port across versions (":0", "0.0.0.0:0", nothing), which broke this check when ubuntu-latest moved to 26.04.
+published() { # service: yes when its container publishes any port to the host (the mappings go to stderr)
+  local id; id=$(docker compose ps -q "$1" 2>/dev/null)
+  [ -n "$id" ] || { echo "no container for $1"; return; }
+  if [ -z "$(docker port "$id" 2>/dev/null)" ]; then echo no; else docker port "$id" >&2; echo yes; fi
+}
+check "api not published"    no "$(published api)"
+check "db not published"     no "$(published db)"
 
 L=$(cat /proc/sys/kernel/random/uuid)
 vote=$(curl -s -X POST "$BASE/api/ratings" -H "x-listener-id: $L" -H 'content-type: application/json' \
