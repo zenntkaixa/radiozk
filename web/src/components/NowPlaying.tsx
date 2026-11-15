@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { NowPlaying as NowPlayingData } from '../nowPlaying.ts';
-import { searchUrl } from '../playerUi.ts';
+import { searchUrl, splitTitle } from '../playerUi.ts';
 import RatingButtons from './RatingButtons.tsx';
 
 function quality(d: NowPlayingData) {
@@ -35,6 +35,7 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
   }
 
   const q = quality(data);
+  const { main: title, extra: version } = splitTitle(data.title || 'Unknown title');
   const subtitle = [data.album, data.year].filter(Boolean).join(' · ');
 
   return (
@@ -63,7 +64,8 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
           />
         )}
         <div className="min-w-0">
-          <p className="text-lg font-semibold leading-snug sm:text-2xl">{data.title || 'Unknown title'}</p>
+          <p className="text-lg font-semibold leading-snug sm:text-2xl">{title}</p>
+          {version && <p className="text-xs text-slate-500 dark:text-slate-400">{version}</p>}
           <p className="text-slate-700 dark:text-slate-300">{data.artist || 'Unknown artist'}</p>
           {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
           {q && (

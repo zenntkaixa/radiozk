@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MIN_LISTENERS_SHOWN, isPlayPauseKey, pageTitle, presenceLine, searchUrl } from '../src/playerUi.ts';
+import { MIN_LISTENERS_SHOWN, isPlayPauseKey, pageTitle, presenceLine, searchUrl, splitTitle } from '../src/playerUi.ts';
 
 const key = (target: Element | null, over: Partial<{ code: string; repeat: boolean; ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }> = {}) =>
   ({ code: 'Space', repeat: false, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, target, ...over });
@@ -58,5 +58,31 @@ describe('searchUrl', () => {
 
   it('works without an artist', () => {
     expect(new URL(searchUrl('', 'Song')).searchParams.get('search_query')).toBe('Song');
+  });
+});
+
+describe('splitTitle', () => {
+  it.each([
+    ['Policy of Truth (2006 Remaster)', 'Policy of Truth', '2006 Remaster'],
+    ['Sweet Jane (Full Length Version; 2015 Remaster)', 'Sweet Jane', 'Full Length Version; 2015 Remaster'],
+    ['Kiss You Back (Single Version)', 'Kiss You Back', 'Single Version'],
+    ['Song [Remastered 2003]', 'Song', 'Remastered 2003'],
+    ['Song (Soundtrack Album Version)', 'Song', 'Soundtrack Album Version'],
+    ['Shout out to My Ex - Workout Mix', 'Shout out to My Ex', 'Workout Mix'],
+    ['Song (Album Version) (2011 Remaster)', 'Song', 'Album Version · 2011 Remaster'],
+  ])('moves the version note of %s under the title', (title, main, extra) => expect(splitTitle(title)).toEqual({ main, extra }));
+
+  it.each([
+    'Plain Title',
+    'Folsom Prison Blues (Live at Folsom State Prison, Folsom, CA - January 1968)',
+    'Lean On (feat. Someone)',
+    'Song (Remix)',
+    'Song (Acoustic Version)',
+    'Hello - Goodbye',
+    'Mixed Feelings',
+  ])('leaves %s alone', (title) => expect(splitTitle(title)).toEqual({ main: title, extra: '' }));
+
+  it('never strips a title to nothing', () => {
+    expect(splitTitle('(2015 Remaster)')).toEqual({ main: '(2015 Remaster)', extra: '' });
   });
 });

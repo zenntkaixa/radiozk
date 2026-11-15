@@ -103,11 +103,11 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 - `api.test.ts`: request URLs, the `x-listener-id` header, POST bodies and error mapping, with `fetch` stubbed.
 - `listenerId.test.ts`: UUID generation and persistence, behaviour when storage is blocked, and the fallback when `crypto.randomUUID` is missing. The module caches state, so each test loads a fresh copy.
 - `rating.test.ts`: `applyVote` as a pure function.
-- `playerUi.test.ts`: the Space-key rule, the tab title, the listener line and the YouTube search link (`isPlayPauseKey`, `pageTitle`, `presenceLine`, `searchUrl`), as pure functions.
+- `playerUi.test.ts`: the Space-key rule, the tab title, the listener line, the YouTube search link and the version-note split (`isPlayPauseKey`, `pageTitle`, `presenceLine`, `searchUrl`, `splitTitle`), as pure functions.
 - `pageTitle.test.tsx`: the single owner of the tab title: the playing track wins over the page title on any page, and the base title comes back.
 - `visualizer.test.ts`: the bar levels, and `ensureGraph` building the audio graph only once the `AudioContext` is running, wrapping an element once and resuming a suspended context.
 - `usePresence.test.tsx`: heartbeats every 30 s only while playing, read-only polling otherwise (paused while the tab is hidden), and keeping the last count on failure.
-- `MiniPlayer.test.tsx`: the sticky bar shows on other pages once the radio has started, not on the Radio page, and drives playback.
+- `MiniPlayer.test.tsx`: the sticky bar shows on other pages once the radio has started, not on the Radio page, and drives playback; it shows a small cover, the title without its version note, and wraps long titles to two lines.
 - `About.test.tsx`: the heading rules the e2e depends on, the cards, the link buttons and the tab title.
 - `useRadioStream.test.tsx`: the playback hook with a fake `hls.js/light` and a controllable idle scheduler: nothing is loaded until idle, never in native mode, Save-Data and load failures (with retry), unmount while loading, Play before and after the player exists (including pressing it twice), FLAC pinning with the AAC fallback notice, and quality switches while paused, playing and mid-start. The fake is registered per test with `vi.doMock`, because Vitest caches a `vi.mock` factory's result across `resetModules()`.
 - `idle.test.ts`: `whenIdle` (delay, idle callback, waiting for images with a cap, cancelling) and `saveDataRequested`.
