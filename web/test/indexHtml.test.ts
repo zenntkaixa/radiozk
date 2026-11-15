@@ -35,6 +35,14 @@ describe('index.html', () => {
     expect(() => readFileSync(web('public', 'og.png'))).not.toThrow();
   });
 
+  it('ships a robots.txt and a sitemap.xml for the static site\'s host, as real files (not the SPA fallback)', () => {
+    const site = `https://${NAMES.web}.onrender.com/`;
+    const robots = readFileSync(web('public', 'robots.txt'), 'utf8');
+    expect(robots).toContain(`Sitemap: ${site}sitemap.xml`);
+    const locs = [...readFileSync(web('public', 'sitemap.xml'), 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+    expect(locs).toEqual([site, `${site}about`]);
+  });
+
   it('starts the metadata request early, for the same URL as the poll in nowPlaying.ts', () => {
     const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)].map((m) => m[1]).join('\n');
     expect(inline).toContain('window.__earlyMetadata');

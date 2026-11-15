@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRadio } from '../hooks/RadioProvider.tsx';
 import { saveDataRequested } from '../idle.ts';
+import ShareButton from './ShareButton.tsx';
 import { MIN_LISTENERS_SHOWN, SLEEP_CHOICES, prefersReducedMotion, presenceLine } from '../playerUi.ts';
 
 /** The player card of the Radio page. The audio itself lives in RadioProvider and keeps going when this unmounts. */
@@ -88,7 +89,7 @@ export default function RadioPlayer() {
         />
       </div>
 
-      <div className="mt-4 flex items-center gap-3 text-sm">
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
         <label htmlFor="sleep" className="text-slate-600 dark:text-slate-400">Sleep timer</label>
         <select
           id="sleep"
@@ -102,6 +103,7 @@ export default function RadioPlayer() {
           ))}
         </select>
         {sleep && <span className="text-slate-500 dark:text-slate-400" role="status">Stops in {sleep.left} min</span>}
+        <span className="sm:ml-auto"><ShareButton /></span>
       </div>
 
       {mode === 'hls.js' && (
