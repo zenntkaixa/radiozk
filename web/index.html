@@ -3,8 +3,23 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>radiozk</title>
+    <title>radiozk: lossless live radio</title>
+    <meta name="description" content="A free live radio player that streams lossless FLAC right in your browser, with a Now Playing view and a thumbs up or down for every song." />
+    <meta name="theme-color" content="#4f46e5" />
+    <!-- Link previews. Crawlers read this static file (the app renders in the browser), so these apply to every route.
+         The URLs must be absolute and match the static site's onrender.com name (test/indexHtml.test.ts checks). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="radiozk" />
+    <meta property="og:title" content="radiozk: lossless live radio" />
+    <meta property="og:description" content="Listen to a live lossless stream in your browser and rate the songs." />
+    <meta property="og:url" content="https://zenntkaixa-radiozk.onrender.com/" />
+    <meta property="og:image" content="https://zenntkaixa-radiozk.onrender.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="radiozk: lossless live radio, with a play button" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- Start the CDN connection (DNS + TLS) now instead of when the first request is made after the JS has loaded.
          Same host as CDN_BASE in src/config.ts (test/indexHtml.test.ts keeps them in step). Both variants are needed:
          fetch/XHR (metadata, HLS) and <img> (cover) use separate connection pools. -->
