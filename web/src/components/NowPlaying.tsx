@@ -14,7 +14,7 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
 
   if (!data) {
     return (
-      <section className="border-t border-slate-100 dark:border-slate-800 p-6 text-sm text-slate-500 dark:text-slate-400">
+      <section className="border-t border-slate-100 dark:border-slate-800 p-6 text-sm text-slate-600 dark:text-slate-400">
         {error ? (
           'Track info is unavailable right now.'
         ) : (
@@ -46,10 +46,10 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
           src={data.coverUrl}
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute -inset-10 -z-10 h-[calc(100%+5rem)] w-[calc(100%+5rem)] object-cover opacity-30 blur-3xl dark:opacity-25"
+          className="pointer-events-none absolute -inset-10 -z-10 h-[calc(100%+5rem)] w-[calc(100%+5rem)] object-cover opacity-20 blur-3xl dark:opacity-25"
         />
       )}
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Now playing</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Now playing</h2>
       {/* Cover left; on wider screens the thumbs sit beside its bottom edge instead of leaving that space empty. */}
       <div className="mt-3 grid grid-cols-[auto_1fr] gap-x-4">
         {failedCover === data.coverUrl ? (
@@ -66,9 +66,9 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
         )}
         <div className="min-w-0">
           <p className="text-lg font-semibold leading-snug sm:text-2xl">{title}</p>
-          {version && <p className="text-xs text-slate-500 dark:text-slate-400">{version}</p>}
+          {version && <p className="text-xs text-slate-600 dark:text-slate-400">{version}</p>}
           <p className="text-slate-700 dark:text-slate-300">{data.artist || 'Unknown artist'}</p>
-          {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-slate-600 dark:text-slate-400">{subtitle}</p>}
           {q && (
             <p className="mt-2 inline-block rounded-full bg-indigo-50 dark:bg-indigo-950 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
               {q}
@@ -84,7 +84,7 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
 
       {data.previous.length > 0 && (
         <>
-          <h3 className="mt-6 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Recently played</h3>
+          <h3 className="mt-6 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Recently played</h3>
           <ol className="mt-2 divide-y divide-slate-100 dark:divide-slate-800 text-sm">
             {data.previous.map((t, i) => (
               <li key={`${i}-${t.artist}-${t.title}`} className="flex flex-wrap items-center gap-x-1.5">
@@ -95,9 +95,9 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
                   title="Search on YouTube"
                   className="inline-flex min-h-11 items-center font-medium underline decoration-slate-300 underline-offset-2 hover:decoration-current dark:decoration-slate-600"
                 >
-                  {t.title}
+                  {splitTitle(t.title).main}
                 </a>
-                {t.artist && <span className="text-slate-500 dark:text-slate-400">— {t.artist}</span>}
+                {t.artist && <span className="text-slate-600 dark:text-slate-400">— {t.artist}</span>}
               </li>
             ))}
           </ol>

@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import BackToRadio from '../components/BackToRadio.tsx';
 import { CHANGELOG } from '../changelog.ts';
 import { useDocumentTitle } from '../pageTitle.ts';
 
@@ -19,7 +19,9 @@ export default function WhatsNew() {
           </section>
         ))}
       </div>
-      <Link to="/" className="mt-6 inline-flex min-h-11 items-center text-indigo-600 underline dark:text-indigo-400">Back to the radio</Link>
+      <div className="mt-6">
+        <BackToRadio />
+      </div>
     </>
   );
 }

@@ -71,12 +71,11 @@ export default function RadioPlayer() {
         <canvas ref={setCanvas} aria-hidden="true" className="h-12 min-w-0 flex-1" />
       </div>
 
-      {/* Each piece stays whole when the line wraps on a phone; the thank-you waits for the first Play. */}
-      {presence.length > 0 && (
-        <p className="mt-4 flex flex-wrap gap-x-4 text-sm text-slate-600 dark:text-slate-400">
-          {presence.map((t) => <span key={t}>{t}</span>)}
-        </p>
-      )}
+      {/* Always rendered, so the layout does not jump when the thank-you appears on the first Play (one line is reserved).
+          Each piece stays whole when the line wraps on a phone. */}
+      <p className="mt-4 flex min-h-5 flex-wrap gap-x-4 text-sm text-slate-600 dark:text-slate-400">
+        {presence.map((t) => <span key={t}>{t}</span>)}
+      </p>
 
       <div className="mt-4 flex items-center gap-3">
         <label htmlFor="vol" className="text-sm text-slate-600 dark:text-slate-400">Volume</label>

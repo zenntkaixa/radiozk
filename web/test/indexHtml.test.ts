@@ -48,7 +48,7 @@ describe('index.html', () => {
     const m = JSON.parse(readFileSync(web('public', 'manifest.webmanifest'), 'utf8'));
     expect(m.display).toBe('standalone');
     expect(m.start_url).toBe('/');
-    expect(m.icons.map((i: { sizes: string }) => i.sizes)).toEqual(['192x192', '512x512']);
+    expect(m.icons.map((i: { sizes: string; purpose: string }) => `${i.sizes} ${i.purpose}`)).toEqual(['192x192 any', '512x512 any', '512x512 maskable']); // maskable: full-bleed, glyph inside the safe zone
     for (const i of m.icons) expect(() => readFileSync(web('public', i.src.replace(/^\//, '')))).not.toThrow();
   });
 

@@ -96,4 +96,16 @@ describe('thank-you line', () => {
     expect(screen.getByText(/5 listening with you/)).toBeInTheDocument();
     expect(screen.queryByText(/Arigatou/)).toBeNull(); // still before the first Play
   });
+
+  it('reserves the line before the first Play, so the layout does not jump when the thank-you appears', () => {
+    stream.status = 'idle';
+    const idle = show(<RadioPlayer />);
+    const line = idle.container.querySelector('p.min-h-5');
+    expect(line).not.toBeNull();
+    expect(line).toBeEmptyDOMElement();
+    idle.unmount();
+    stream.status = 'playing';
+    const playing = show(<RadioPlayer />);
+    expect(playing.container.querySelector('p.min-h-5')).toHaveTextContent('Arigatou for tuning in');
+  });
 });
