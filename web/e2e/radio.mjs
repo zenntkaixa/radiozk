@@ -187,6 +187,26 @@ try {
     await fresh.close();
   }
 
+  // --- the radio keeps playing across pages (the player lives above the routes) ---
+  await page.goto(`${base}/`);
+  await page.getByRole('button', { name: 'Play' }).click();
+  await page.waitForFunction(() => { const a = document.querySelector('audio'); return a && !a.paused && a.readyState >= 3; }, null, { timeout: 40000 }).catch(() => {});
+  await page.waitForTimeout(2000);
+  check('no mini-player on the Radio page (the full player is there)', (await page.getByRole('complementary', { name: 'Mini player' }).count()) === 0);
+  await page.getByRole('link', { name: 'About', exact: true }).click();
+  await page.getByRole('heading', { name: 'About' }).waitFor({ timeout: 10000 });
+  const kept = await mediaAdvance(page, 3, 20000);
+  check('music keeps playing after navigating to About', kept.advanced >= 3 && !kept.paused && !kept.err, `advanced ${kept.advanced.toFixed(1)}s in ${kept.wall.toFixed(1)}s`);
+  const mini = page.getByRole('complementary', { name: 'Mini player' });
+  check('mini-player shows on About while playing', await mini.isVisible() && (await mini.getByRole('button', { name: 'Pause' }).count()) === 1);
+  check('tab title shows the track on About while playing', !/^About/.test(await page.title()) && /· radiozk$/.test(await page.title()), await page.title());
+  await mini.getByRole('button', { name: 'Pause' }).click();
+  check('the mini-player pauses the audio', await page.waitForFunction(() => document.querySelector('audio').paused, null, { timeout: 5000 }).then(() => true, () => false));
+  check('tab title goes back to About once paused', (await page.title()) === 'About · radiozk', await page.title());
+  await mini.getByRole('link', { name: 'Open player' }).click();
+  await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 });
+  check('the player card shows the paused state and the mini-player is gone', /Paused/.test((await status.textContent()) ?? '') && (await page.getByRole('complementary', { name: 'Mini player' }).count()) === 0, (await status.textContent())?.trim());
+
   // --- routing / deep links ---
   await page.goto(`${base}/about`);
   check('deep link /about works', await page.getByRole('heading', { name: 'About' }).waitFor({ timeout: 10000 }).then(() => true, () => false));

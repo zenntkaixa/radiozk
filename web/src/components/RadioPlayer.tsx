@@ -1,33 +1,24 @@
-import { useEffect, useRef, useState } from 'react';
-import type { NowPlaying } from '../nowPlaying.ts';
-import { useMediaSession } from '../hooks/useMediaSession.ts';
-import { useRadioStream } from '../hooks/useRadioStream.ts';
-import { usePresence } from '../hooks/usePresence.ts';
+import { useEffect, useState } from 'react';
+import { useRadio } from '../hooks/RadioProvider.tsx';
 import { saveDataRequested } from '../idle.ts';
-import { BASE_TITLE } from '../pageTitle.ts';
-import { isPlayPauseKey, pageTitle, prefersReducedMotion, presenceLine } from '../playerUi.ts';
+import { prefersReducedMotion, presenceLine } from '../playerUi.ts';
 
-export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
-  const { audioRef, audioProps, mode, quality, status, info, notice, togglePlay, changeQuality } = useRadioStream();
-  const [volume, setVolume] = useState(0.8);
-  useMediaSession(track, status !== 'idle'); // idle until the first Play
-  const listening = usePresence(status === 'playing');
+/** The player card of the Radio page. The audio itself lives in RadioProvider and keeps going when this unmounts. */
+export default function RadioPlayer() {
+  const { audioRef, mode, quality, status, info, notice, togglePlay, changeQuality, listening, volume, setVolume } = useRadio();
 
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume;
-  }, [audioRef, volume]);
-
-  // Frequency bars while playing through hls.js (not Safari's native HLS). The chunk loads on first play.
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Frequency bars while playing through hls.js (not Safari's native HLS). The chunk loads on first play. The canvas
+  // is state, not a ref, so coming back to this page while playing starts the bars again.
+  const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
   const playing = status === 'playing';
   useEffect(() => {
-    if (!playing || mode !== 'hls.js' || prefersReducedMotion() || saveDataRequested()) return;
+    if (!playing || mode !== 'hls.js' || !canvas || prefersReducedMotion() || saveDataRequested()) return;
     let cancelled = false;
     let stop: (() => void) | null = null;
     import('../visualizer.ts')
       .then(async ({ startVisualizer }) => {
-        if (!audioRef.current || !canvasRef.current || cancelled) return;
-        const s = await startVisualizer(audioRef.current, canvasRef.current);
+        if (!audioRef.current || cancelled) return;
+        const s = await startVisualizer(audioRef.current, canvas);
         if (cancelled) s?.();
         else stop = s;
       })
@@ -36,24 +27,7 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
       cancelled = true;
       stop?.();
     };
-  }, [playing, mode, audioRef]);
-
-  useEffect(() => {
-    document.title = pageTitle(BASE_TITLE, status === 'playing', track);
-    return () => {
-      document.title = BASE_TITLE;
-    };
-  }, [status, track]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!isPlayPauseKey(e)) return;
-      e.preventDefault(); // otherwise Space scrolls the page
-      togglePlay();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [togglePlay]);
+  }, [playing, mode, canvas, audioRef]);
 
   const label = { idle: 'Tap play to listen', buffering: 'Buffering…', playing: 'Live', paused: 'Paused', error: 'Error' }[status];
 
@@ -63,8 +37,6 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
 
   return (
     <section className="p-6">
-      <audio ref={audioRef} {...audioProps} />
-
       <div className="flex items-center gap-4">
         <div className="relative shrink-0">
           {playing && <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full bg-indigo-500/50 motion-safe:animate-ring" />}
@@ -94,7 +66,7 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
             )}
           </p>
         </div>
-        <canvas ref={canvasRef} aria-hidden="true" className="h-12 min-w-0 flex-1" />
+        <canvas ref={setCanvas} aria-hidden="true" className="h-12 min-w-0 flex-1" />
       </div>
 
       <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{presenceLine(listening)}</p>
