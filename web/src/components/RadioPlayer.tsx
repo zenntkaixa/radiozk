@@ -2,16 +2,40 @@ import { useEffect, useRef, useState } from 'react';
 import type { NowPlaying } from '../nowPlaying.ts';
 import { useMediaSession } from '../hooks/useMediaSession.ts';
 import { useRadioStream } from '../hooks/useRadioStream.ts';
-import { isPlayPauseKey, pageTitle } from '../playerUi.ts';
+import { usePresence } from '../hooks/usePresence.ts';
+import { saveDataRequested } from '../idle.ts';
+import { isPlayPauseKey, pageTitle, prefersReducedMotion, presenceLine } from '../playerUi.ts';
 
 export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
   const { audioRef, audioProps, mode, quality, status, info, notice, togglePlay, changeQuality } = useRadioStream();
   const [volume, setVolume] = useState(0.8);
   useMediaSession(track, status !== 'idle'); // idle until the first Play
+  const listening = usePresence(status === 'playing');
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [audioRef, volume]);
+
+  // Frequency bars while playing through hls.js (not Safari's native HLS). The chunk loads on first play.
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const playing = status === 'playing';
+  useEffect(() => {
+    if (!playing || mode !== 'hls.js' || prefersReducedMotion() || saveDataRequested()) return;
+    let cancelled = false;
+    let stop: (() => void) | null = null;
+    import('../visualizer.ts')
+      .then(async ({ startVisualizer }) => {
+        if (!audioRef.current || !canvasRef.current || cancelled) return;
+        const s = await startVisualizer(audioRef.current, canvasRef.current);
+        if (cancelled) s?.();
+        else stop = s;
+      })
+      .catch(() => {}); // no visualizer is fine, the radio still plays
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [playing, mode, audioRef]);
 
   const baseTitle = useRef(document.title);
   useEffect(() => {
@@ -34,7 +58,7 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
   const label = { idle: 'Tap play to listen', buffering: 'Buffering…', playing: 'Live', paused: 'Paused', error: 'Error' }[status];
 
   if (mode === 'unsupported') {
-    return <p className="text-red-700">This browser can't play HLS streams.</p>;
+    return <p className="text-red-700 dark:text-red-400">This browser can't play HLS streams.</p>;
   }
 
   return (
@@ -55,22 +79,25 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
         </button>
         <div>
           <p className="text-lg font-semibold">radiozk live</p>
-          <p className="flex items-center gap-2 text-sm text-slate-600" role="status">
-            <span className={`h-2 w-2 rounded-full ${status === 'playing' ? 'animate-pulse bg-red-500' : 'bg-slate-300'}`} />
+          <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400" role="status">
+            <span className={`h-2 w-2 rounded-full ${status === 'playing' ? 'animate-pulse bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
             {label}
-            {info && <span className="text-slate-500">·</span>}
+            {info && <span className="text-slate-500 dark:text-slate-400">·</span>}
             {info && (
-              <span className={info.lossless ? 'font-medium text-indigo-600' : ''}>
+              <span className={info.lossless ? 'font-medium text-indigo-600 dark:text-indigo-400' : ''}>
                 {info.codec}
                 {info.lossless && ' · lossless'}
               </span>
             )}
           </p>
         </div>
+        <canvas ref={canvasRef} aria-hidden="true" className="h-12 min-w-0 flex-1" />
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
-        <label htmlFor="vol" className="text-sm text-slate-600">Volume</label>
+      <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{presenceLine(listening)}</p>
+
+      <div className="mt-4 flex items-center gap-3">
+        <label htmlFor="vol" className="text-sm text-slate-600 dark:text-slate-400">Volume</label>
         <input
           id="vol"
           type="range"
@@ -94,8 +121,8 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
           ))}
         </fieldset>
       )}
-      {mode === 'native' && <p className="mt-4 text-sm text-slate-500">Your browser plays the stream natively and chooses the quality automatically.</p>}
-      {notice && <p className="mt-4 text-sm text-amber-700">{notice}</p>}
+      {mode === 'native' && <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Your browser plays the stream natively and chooses the quality automatically.</p>}
+      {notice && <p className="mt-4 text-sm text-amber-700 dark:text-amber-400">{notice}</p>}
     </section>
   );
 }

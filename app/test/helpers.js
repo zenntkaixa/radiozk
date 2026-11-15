@@ -25,7 +25,7 @@ export async function startTestServer({ port, db, env = {} }) {
 
   const server = spawn(process.execPath, ['src/server.js'], {
     // Generous rate limits by default: a test file sends many requests from one address. Rate-limit tests override them.
-    env: { ...process.env, RATE_LIMIT_READ: '100000', RATE_LIMIT_WRITE: '100000', DATABASE_URL: ADMIN_URL.replace(/\/[^/]+$/, `/${db}`), APP_PORT: String(port), ...env },
+    env: { ...process.env, RATE_LIMIT_READ: '100000', RATE_LIMIT_WRITE: '100000', RATE_LIMIT_PRESENCE: '100000', RATE_LIMIT_PRESENCE_LISTENER: '100000', DATABASE_URL: ADMIN_URL.replace(/\/[^/]+$/, `/${db}`), APP_PORT: String(port), ...env },
     stdio: ['ignore', 'ignore', 'inherit'],
   });
   for (let i = 0; i < 50; i++) {
