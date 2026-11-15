@@ -4,6 +4,7 @@ import { useMediaSession } from '../hooks/useMediaSession.ts';
 import { useRadioStream } from '../hooks/useRadioStream.ts';
 import { usePresence } from '../hooks/usePresence.ts';
 import { saveDataRequested } from '../idle.ts';
+import { BASE_TITLE } from '../pageTitle.ts';
 import { isPlayPauseKey, pageTitle, prefersReducedMotion, presenceLine } from '../playerUi.ts';
 
 export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
@@ -37,11 +38,10 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
     };
   }, [playing, mode, audioRef]);
 
-  const baseTitle = useRef(document.title);
   useEffect(() => {
-    document.title = pageTitle(baseTitle.current, status === 'playing', track);
+    document.title = pageTitle(BASE_TITLE, status === 'playing', track);
     return () => {
-      document.title = baseTitle.current;
+      document.title = BASE_TITLE;
     };
   }, [status, track]);
 

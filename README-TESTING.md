@@ -13,7 +13,7 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 57 backend (16 unit + 23 API + 18 security), 13 parser, 103 UI, 33 e2e checks.
+Current counts: 57 backend (16 unit + 23 API + 18 security), 13 parser, 109 UI, 37 e2e checks.
 
 The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks the security headers on pages, assets, API and error responses, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
@@ -58,7 +58,7 @@ bin/psql.sh -c 'truncate ratings'   # clean up afterwards
 
 It checks page render, FLAC and AAC playback advancing (it waits until the audio has advanced 5 s of media within 25 s, so a CDN rebuffer does not fail it), ratings (including persistence across a reload), routing, and that the Content-Security-Policy blocks nothing the player needs. It casts real votes in your development database, hence the cleanup step. It uses Playwright's bundled Firefox from `~/.cache/ms-playwright`. The test machine has no audio device, so it proves that audio decodes and advances, not that it is audible.
 
-The same checks run in Chromium with `cd web && npm run e2e:chromium` (once: `npx playwright install chromium`, about 120 MB in `~/.cache/ms-playwright`). It exercises the hls.js path, the FLAC and AAC variants and the Content-Security-Policy in a Chrome engine (Chromium passes all 33 checks). Safari/iOS still use native HLS and are not covered.
+The same checks run in Chromium with `cd web && npm run e2e:chromium` (once: `npx playwright install chromium`, about 120 MB in `~/.cache/ms-playwright`). It exercises the hls.js path, the FLAC and AAC variants and the Content-Security-Policy in a Chrome engine (Chromium passes all 37 checks). Safari/iOS still use native HLS and are not covered.
 
 ## What each layer covers
 
