@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import type { NowPlaying } from '../nowPlaying.ts';
 import { useMediaSession } from '../hooks/useMediaSession.ts';
 import { useRadioStream } from '../hooks/useRadioStream.ts';
-import { isPlayPauseKey, pageTitle } from '../playerUi.ts';
+import { usePresence } from '../hooks/usePresence.ts';
+import { isPlayPauseKey, pageTitle, presenceLine } from '../playerUi.ts';
 
 export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
   const { audioRef, audioProps, mode, quality, status, info, notice, togglePlay, changeQuality } = useRadioStream();
   const [volume, setVolume] = useState(0.8);
   useMediaSession(track, status !== 'idle'); // idle until the first Play
+  const listening = usePresence(status === 'playing');
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
@@ -69,7 +71,9 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
         </div>
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
+      <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{presenceLine(listening)}</p>
+
+      <div className="mt-4 flex items-center gap-3">
         <label htmlFor="vol" className="text-sm text-slate-600 dark:text-slate-400">Volume</label>
         <input
           id="vol"

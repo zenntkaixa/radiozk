@@ -7,13 +7,13 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 | Layer | Where | Tool | Needs | Speed |
 |---|---|---|---|---|
 | Backend unit | `app/test/validate.test.js`, `app/test/rateLimit.test.js`, `app/test/ports.test.js` | `node:test` | nothing | milliseconds |
-| Backend API (integration) | `app/test/ratings.test.js`, `app/test/port.test.js` | `node:test` | PostgreSQL | seconds |
+| Backend API (integration) | `app/test/ratings.test.js`, `app/test/presence.test.js`, `app/test/port.test.js` | `node:test` | PostgreSQL | seconds |
 | Backend security | `app/test/security.test.js` | `node:test` | PostgreSQL | seconds |
 | Frontend parser, size check | `web/test/nowPlaying.test.mjs`, `web/test/checkSize.test.mjs` | `node:test` | nothing | milliseconds |
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 51 backend (14 unit + 19 API + 18 security), 13 parser, 89 UI, 29 e2e checks.
+Current counts: 57 backend (16 unit + 23 API + 18 security), 13 parser, 96 UI, 29 e2e checks.
 
 The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks the security headers on pages, assets, API and error responses, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
@@ -70,6 +70,10 @@ Tests the pure functions in `app/src/validate.js` with no server or database:
 - `trackKey`: case and whitespace insensitivity, unicode, differently titled releases staying distinct
 - `parseTrackRequest`: valid requests, missing or malformed listener ids, empty title, length limits (200 artist / 300 title, measured after normalising)
 - `isRatingValue`: only `1`, `-1` and `0` are accepted
+
+### Presence: `app/test/presence.test.js`
+
+The in-memory listener count: unit tests of the store with a fake clock (expiry, one count per id, the memory cap) and black-box tests of `/api/presence` on ports 3105 and 3106 (database `radiozk_test_presence`): counting, the 400 without a listener id, `no-store`, and the per-listener and per-IP heartbeat limits.
 
 ### Backend API: `app/test/ratings.test.js`
 

@@ -1,6 +1,8 @@
 // Pure request validation for the ratings API (no I/O, so it is unit-testable without a database).
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export const isListenerId = (v) => UUID_RE.test(String(v ?? ''));
+
 export const MAX_ARTIST = 200;
 export const MAX_TITLE = 300;
 

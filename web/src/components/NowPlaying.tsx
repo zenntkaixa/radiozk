@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { NowPlaying as NowPlayingData } from '../nowPlaying.ts';
+import { searchUrl } from '../playerUi.ts';
 import RatingButtons from './RatingButtons.tsx';
 
 function quality(d: NowPlayingData) {
@@ -72,7 +73,15 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
           <ol className="mt-2 divide-y divide-slate-100 dark:divide-slate-800 text-sm">
             {data.previous.map((t, i) => (
               <li key={`${i}-${t.artist}-${t.title}`} className="py-1.5">
-                <span className="font-medium">{t.title}</span>
+                <a
+                  href={searchUrl(t.artist, t.title)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Search on YouTube"
+                  className="font-medium underline decoration-slate-300 underline-offset-2 hover:decoration-current dark:decoration-slate-600"
+                >
+                  {t.title}
+                </a>
                 {t.artist && <span className="text-slate-500 dark:text-slate-400"> — {t.artist}</span>}
               </li>
             ))}

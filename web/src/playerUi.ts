@@ -16,3 +16,14 @@ export function isPlayPauseKey(e: KeyLike): boolean {
 export function pageTitle(base: string, playing: boolean, track?: { title: string } | null): string {
   return playing && track?.title ? `${track.title} · radiozk` : base;
 }
+
+// "Listening with you": the count is only shown from this many listeners up (fewer looks lonely).
+export const MIN_LISTENERS_SHOWN = 3;
+
+export function presenceLine(listening: number | null): string {
+  const thanks = 'Arigatou for tuning in ✨';
+  return listening !== null && listening >= MIN_LISTENERS_SHOWN ? `🎧 ${listening} listening with you right now · ${thanks}` : thanks;
+}
+
+export const searchUrl = (artist: string, title: string) =>
+  `https://www.youtube.com/results?${new URLSearchParams({ search_query: `${artist} ${title}`.trim() })}`;
