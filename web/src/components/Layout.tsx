@@ -1,9 +1,12 @@
 import { NavLink, Outlet } from 'react-router';
+import { RadioProvider } from '../hooks/RadioProvider.tsx';
+import MiniPlayer, { useMiniPlayerVisible } from './MiniPlayer.tsx';
 
 const link = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'font-semibold text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
 
-export default function Layout() {
+function Shell() {
+  const mini = useMiniPlayerVisible();
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       <header className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -16,9 +19,19 @@ export default function Layout() {
           <NavLink to="/about" className={link}>About</NavLink>
         </nav>
       </header>
-      <main className="mx-auto max-w-2xl px-4 py-8">
+      <main className={`mx-auto max-w-2xl px-4 py-8 ${mini ? 'pb-28' : ''}`}>
         <Outlet />
       </main>
+      <MiniPlayer />
     </div>
+  );
+}
+
+// The provider is above the pages, so the radio keeps playing as the visitor moves between them.
+export default function Layout() {
+  return (
+    <RadioProvider>
+      <Shell />
+    </RadioProvider>
   );
 }
