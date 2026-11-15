@@ -31,7 +31,6 @@ jobs:
       WEB_PORT: '18081'
       POSTGRES_PASSWORD: ci-e2e
       BROWSER: ${{ inputs.browser }}
-      SHOTS: ${{ runner.temp }}/shots
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -47,7 +46,8 @@ jobs:
       - name: Start the throwaway stack
         run: docker compose up -d --build --wait --wait-timeout 240
       - name: Run the e2e
-        run: npm run e2e -- http://localhost:18081
+        # The runner context is not available in a job-level env, so the screenshots folder is set here.
+        run: SHOTS="$RUNNER_TEMP/shots" npm run e2e -- http://localhost:18081
         working-directory: web
       - name: Stack logs (on failure)
         if: failure()
