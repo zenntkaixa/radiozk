@@ -87,7 +87,7 @@ Environment overrides:
 
 ### Bundle size budget: `web/scripts/check-size.mjs`
 
-After a build (`bin/build.sh`), `cd web && npm run size` checks gzip sizes (level 6, as nginx sends them) in `www/`: everything `index.html` loads up front must stay under `initialKb` (95 KB; about 88 KB when set), each other JS chunk under `lazyChunkKb` (120 KB; `hls.light` is about 110 KB), and the initial files must not contain hls.js at all. CI runs it right after the build. Raise a limit in `BUDGET` deliberately, in the PR that needs it. `test/checkSize.test.mjs` runs the check on small fake builds.
+After a build (`bin/build.sh`), `cd web && npm run size` checks gzip sizes (level 6, as nginx sends them) in `www/`: everything `index.html` loads up front must stay under `initialKb` (95 KB; the build prints the current total, which has grown with each feature, so check headroom before adding code), each other JS chunk under `lazyChunkKb` (120 KB; `hls.light` is about 110 KB), and the initial files must not contain hls.js at all. CI runs it right after the build. Raise a limit in `BUDGET` deliberately, in the PR that needs it. `test/checkSize.test.mjs` runs the check on small fake builds.
 
 `cd web && npm run perf [url]` (`scripts/perf.mjs`) measures a cold and a warm page load in headless Firefox: request timeline, FCP, LCP, transferred bytes. It is a manual tool, not a test: timings depend on the CDN that serves the cover, so compare several runs. Point it at a build that is being served (default http://localhost:8080/).
 
