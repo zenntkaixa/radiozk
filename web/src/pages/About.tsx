@@ -17,19 +17,23 @@ export default function About() {
             </a>
             . I wanted something real to practise on, not another to-do list, so I picked something I'd actually enjoy using: a
             radio player that sounds good. It has grown from a blank folder into a live site, and it has been a big part of my
-            journey as a developer.
+            journey as a developer. The name is just as personal: "zk" is short for zenntkaixa, my name online.
           </p>
         </section>
 
         <section>
           <h2 className="mb-2 font-semibold text-slate-900">What you're hearing</h2>
           <p>
-            The music is Radio Calico's public lossless stream, and every track belongs to its artists. I only built the
+            The music is{' '}
+            <a className={link} href="https://www.radio-calico.com/" {...external}>Radio Calico</a>
+            's public lossless stream, and every track belongs to its artists. I only built the
             player around it: lossless FLAC where your browser can play it, AAC where it can't, and a thumbs up or down for
             whatever is on. Votes are anonymous, so no account is needed.
           </p>
           <p className="mt-3">
-            Thank you, Radio Calico, for publishing an open lossless stream. radiozk wouldn't exist without it.
+            Thank you,{' '}
+            <a className={link} href="https://www.radio-calico.com/" {...external}>Radio Calico</a>
+            , for publishing an open lossless stream. radiozk wouldn't exist without it.
           </p>
         </section>
 
