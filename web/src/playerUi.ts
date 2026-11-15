@@ -27,3 +27,5 @@ export function presenceLine(listening: number | null): string {
 
 export const searchUrl = (artist: string, title: string) =>
   `https://www.youtube.com/results?${new URLSearchParams({ search_query: `${artist} ${title}`.trim() })}`;
+
+export const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
