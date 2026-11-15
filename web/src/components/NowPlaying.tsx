@@ -83,13 +83,13 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
           <h3 className="mt-6 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Recently played</h3>
           <ol className="mt-2 divide-y divide-slate-100 dark:divide-slate-800 text-sm">
             {data.previous.map((t, i) => (
-              <li key={`${i}-${t.artist}-${t.title}`} className="py-1.5">
+              <li key={`${i}-${t.artist}-${t.title}`}>
                 <a
                   href={searchUrl(t.artist, t.title)}
                   target="_blank"
                   rel="noopener noreferrer"
                   title="Search on YouTube"
-                  className="font-medium underline decoration-slate-300 underline-offset-2 hover:decoration-current dark:decoration-slate-600"
+                  className="inline-flex min-h-11 items-center font-medium underline decoration-slate-300 underline-offset-2 hover:decoration-current dark:decoration-slate-600"
                 >
                   {t.title}
                 </a>

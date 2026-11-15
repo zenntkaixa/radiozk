@@ -232,6 +232,13 @@ try {
   check('client-side nav to Radio', await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
   await page.goto(`${base}/nope`);
   check('unknown route shows Not Found', await page.getByRole('heading', { name: 'Page not found' }).isVisible());
+  const origin = new URL(page.url()).origin;
+  const robots = await page.request.get(`${origin}/robots.txt`);
+  const sitemap = await page.request.get(`${origin}/sitemap.xml`);
+  check('robots.txt and sitemap.xml are real files, not the SPA page', robots.ok() && /Sitemap:/.test(await robots.text()) && sitemap.ok() && /xml/.test(sitemap.headers()['content-type'] ?? ''));
+  await page.goto(`${origin}/`);
+  await page.getByRole('button', { name: 'Share' }).waitFor();
+  check('Share button is on the Radio page', true);
 } catch (e) {
   check('test run completed without exception', false, e.message.split('\n')[0]);
   await page.screenshot({ path: `${shots}/error.png`, fullPage: true }).catch(() => {});

@@ -66,8 +66,8 @@ export default function RatingButtons({ artist, title }: { artist: string; title
   );
 
   return (
-    <div className="mt-4 flex items-center gap-2">
-      <span className="text-sm text-slate-500 dark:text-slate-400">Rate this track</span>
+    <div className="mt-4 flex flex-wrap items-center gap-2">
+      <span className="shrink-0 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">Rate this track</span>
       {button(1, 'I like this track', ratings?.up, '👍')}
       {button(-1, "I don't like this track", ratings?.down, '👎')}
       {failed && (
