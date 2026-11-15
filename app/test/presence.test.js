@@ -60,6 +60,13 @@ test('a heartbeat counts the listener, once however often it repeats, and GET ne
   assert.equal(await count(server.base), before + 2);
 });
 
+test('upper- and lower-case spellings of one id are one listener', async () => {
+  const before = await count(server.base);
+  const id = randomUUID();
+  await beat(server.base, id);
+  assert.equal((await (await beat(server.base, id.toUpperCase())).json()).listening, before + 1);
+});
+
 test('responses are not cacheable', async () => {
   assert.equal((await fetch(`${server.base}/api/presence`)).headers.get('cache-control'), 'no-store');
 });
@@ -81,4 +88,12 @@ test('rate limits: per listener id, and per IP across ids', async () => {
   // the IP has now used 3 heartbeats: a fresh id from the same address is refused too, another address is not
   assert.equal((await beat(limited.base, randomUUID(), fwd)).status, 429);
   assert.equal((await beat(limited.base, randomUUID(), { 'x-forwarded-for': '203.0.113.8' })).status, 200);
+});
+
+test('the per-listener limit cannot be dodged by changing the case of the id', async () => {
+  const id = randomUUID();
+  const fwd = { 'x-forwarded-for': '203.0.113.9' };
+  assert.equal((await beat(limited.base, id, fwd)).status, 200);
+  assert.equal((await beat(limited.base, id.toUpperCase(), fwd)).status, 200);
+  assert.equal((await beat(limited.base, id, fwd)).status, 429);
 });
