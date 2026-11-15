@@ -91,6 +91,16 @@ try {
   check('lossless FLAC selected', /FLAC/.test(statusText ?? '') && /lossless/.test(statusText ?? ''), statusText);
   await page.screenshot({ path: `${shots}/2-playing.png`, fullPage: true });
 
+  // --- tab title and the Space key ---
+  check('tab title shows the track while playing', /· radiozk$/.test(await page.title()), await page.title());
+  // Focus is still on the Play button, where Space would just press that button; blur it to test the page-level shortcut.
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.keyboard.press('Space');
+  check('Space pauses', await page.waitForFunction(() => document.querySelector('audio').paused, null, { timeout: 5000 }).then(() => true, () => false));
+  check('tab title goes back when paused', await page.waitForFunction(() => !document.title.endsWith('· radiozk'), null, { timeout: 5000 }).then(() => true, () => false), await page.title());
+  await page.keyboard.press('Space');
+  check('Space resumes', await page.waitForFunction(() => !document.querySelector('audio').paused, null, { timeout: 10000 }).then(() => true, () => false));
+
   // --- pause / resume ---
   await page.getByRole('button', { name: 'Pause' }).click();
   await page.waitForFunction(() => document.querySelector('audio').paused, null, { timeout: 5000 });
@@ -176,7 +186,7 @@ try {
   // --- routing / deep links ---
   await page.goto(`${base}/about`);
   check('deep link /about works', await page.getByRole('heading', { name: 'About' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
-  await page.getByRole('link', { name: 'Radio' }).click();
+  await page.getByRole('link', { name: 'Radio', exact: true }).click();
   check('client-side nav to Radio', await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
   await page.goto(`${base}/nope`);
   check('unknown route shows Not Found', await page.getByRole('heading', { name: 'Page not found' }).isVisible());

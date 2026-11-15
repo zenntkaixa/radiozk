@@ -51,7 +51,7 @@ export default function RatingButtons({ artist, title }: { artist: string; title
       disabled={!ratings || busy}
       aria-pressed={ratings?.mine === v}
       aria-label={label}
-      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 disabled:opacity-50 ${
+      className={`flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 disabled:opacity-50 ${
         ratings?.mine === v
           ? 'border-indigo-600 bg-indigo-600 text-white'
           : 'border-slate-300 bg-white text-slate-700 hover:border-indigo-400'

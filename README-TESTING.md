@@ -13,7 +13,7 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 51 backend (14 unit + 19 API + 18 security), 13 parser, 77 UI, 25 e2e checks.
+Current counts: 51 backend (14 unit + 19 API + 18 security), 13 parser, 90 UI, 29 e2e checks.
 
 The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks the security headers on pages, assets, API and error responses, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
@@ -58,7 +58,7 @@ bin/psql.sh -c 'truncate ratings'   # clean up afterwards
 
 It checks page render, FLAC and AAC playback advancing (it waits until the audio has advanced 5 s of media within 25 s, so a CDN rebuffer does not fail it), ratings (including persistence across a reload), routing, and that the Content-Security-Policy blocks nothing the player needs. It casts real votes in your development database, hence the cleanup step. It uses Playwright's bundled Firefox from `~/.cache/ms-playwright`. The test machine has no audio device, so it proves that audio decodes and advances, not that it is audible.
 
-The same checks run in Chromium with `cd web && npm run e2e:chromium` (once: `npx playwright install chromium`, about 120 MB in `~/.cache/ms-playwright`). It exercises the hls.js path, the FLAC and AAC variants and the Content-Security-Policy in a Chrome engine (Chromium 156 passes all 25 checks). Safari/iOS still use native HLS and are not covered.
+The same checks run in Chromium with `cd web && npm run e2e:chromium` (once: `npx playwright install chromium`, about 120 MB in `~/.cache/ms-playwright`). It exercises the hls.js path, the FLAC and AAC variants and the Content-Security-Policy in a Chrome engine (Chromium passes all 29 checks). Safari/iOS still use native HLS and are not covered.
 
 ## What each layer covers
 
@@ -99,6 +99,7 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 - `api.test.ts`: request URLs, the `x-listener-id` header, POST bodies and error mapping, with `fetch` stubbed.
 - `listenerId.test.ts`: UUID generation and persistence, behaviour when storage is blocked, and the fallback when `crypto.randomUUID` is missing. The module caches state, so each test loads a fresh copy.
 - `rating.test.ts`: `applyVote` as a pure function.
+- `playerUi.test.ts`: the Space-key rule and the tab title (`isPlayPauseKey`, `pageTitle`), as pure functions.
 - `useRadioStream.test.tsx`: the playback hook with a fake `hls.js/light` and a controllable idle scheduler: nothing is loaded until idle, never in native mode, Save-Data and load failures (with retry), unmount while loading, Play before and after the player exists (including pressing it twice), FLAC pinning with the AAC fallback notice, and quality switches while paused, playing and mid-start. The fake is registered per test with `vi.doMock`, because Vitest caches a `vi.mock` factory's result across `resetModules()`.
 - `idle.test.ts`: `whenIdle` (delay, idle callback, waiting for images with a cap, cancelling) and `saveDataRequested`.
 - `useMediaSession.test.tsx`: the media session (and so the artwork download) stays untouched until playback has started, then follows track changes and keeps its metadata while paused.
