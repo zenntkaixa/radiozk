@@ -53,3 +53,25 @@ describe('MiniPlayer', () => {
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument(); // buffering counts as playing
   });
 });
+
+describe('MiniPlayer cover and title', () => {
+  it('shows a small cover and the title without its version note', () => {
+    const v = value({ track: { title: 'Song (2015 Remaster)', artist: 'Band', coverUrl: 'https://cdn/cover.jpg?t=1' } as never });
+    const { container } = show('/about', v);
+    expect(screen.getByText('Song')).toBeInTheDocument();
+    expect(screen.queryByText(/Remaster/)).toBeNull();
+    const img = container.querySelector('img');
+    expect(img).toHaveAttribute('src', 'https://cdn/cover.jpg?t=1');
+    expect(img).toHaveAttribute('alt', ''); // decorative
+  });
+
+  it('wraps a long title onto two lines instead of cutting it off at one', () => {
+    show('/about', value({ track: { title: 'A very long song title that does not fit', artist: 'B' } as never }));
+    expect(screen.getByText(/A very long song title/).className).toMatch(/line-clamp-2/);
+  });
+
+  it('drops the cover when it fails to load, and shows none without a track', () => {
+    const { container } = show('/about', value({ track: null }));
+    expect(container.querySelector('img')).toBeNull();
+  });
+});
