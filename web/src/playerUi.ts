@@ -20,9 +20,12 @@ export function pageTitle(base: string, playing: boolean, track?: { title: strin
 // "Listening with you": the count is only shown from this many listeners up (fewer looks lonely).
 export const MIN_LISTENERS_SHOWN = 3;
 
-export function presenceLine(listening: number | null): string {
-  const thanks = 'Arigatou for tuning in ✨';
-  return listening !== null && listening >= MIN_LISTENERS_SHOWN ? `🎧 ${listening} listening with you right now · ${thanks}` : thanks;
+/** The pieces of the line under the player: the count from MIN_LISTENERS_SHOWN up, and the thank-you once they have tuned in. */
+export function presenceParts(listening: number | null, tunedIn: boolean): string[] {
+  const parts: string[] = [];
+  if (listening !== null && listening >= MIN_LISTENERS_SHOWN) parts.push(`🎧 ${listening} listening with you right now`);
+  if (tunedIn) parts.push('Arigatou for tuning in ✨');
+  return parts;
 }
 
 export const searchUrl = (artist: string, title: string) =>

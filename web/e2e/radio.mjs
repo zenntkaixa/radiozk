@@ -233,7 +233,7 @@ try {
   await page.getByRole('link', { name: 'Radio', exact: true }).click();
   check('client-side nav to Radio', await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
   await page.goto(`${base}/nope`);
-  check('unknown route shows Not Found', await page.getByRole('heading', { name: 'Page not found' }).isVisible());
+  check('unknown route shows Not Found, with a way back', await page.getByRole('heading', { name: 'Page not found' }).isVisible() && (await page.getByRole('link', { name: /Back to the radio/ }).count()) === 1);
   const origin = new URL(page.url()).origin;
   const robots = await page.request.get(`${origin}/robots.txt`);
   const sitemap = await page.request.get(`${origin}/sitemap.xml`);
