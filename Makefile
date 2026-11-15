@@ -1,5 +1,5 @@
 # Thin wrappers around the scripts in bin/ (they load bin/env.sh themselves where needed).
-.PHONY: help setup test security audit security-tests docker-smoke build
+.PHONY: help setup test security audit security-tests docker-smoke build backup
 
 help:
 	@echo "make setup          create the .local/ toolchain on a fresh clone (no root)"
@@ -8,6 +8,7 @@ help:
 	@echo "make audit          npm audit for app/ and web/ (fails on high; AUDIT_LEVEL=moderate to tighten)"
 	@echo "make security-tests API security tests only (needs PostgreSQL)"
 	@echo "make build          type check + production build into www/"
+	@echo "make backup          dump a database (BACKUP_DATABASE_URL, e.g. the Neon one) to dev/backups/"
 	@echo "make docker-smoke   build and smoke-test the production Docker images"
 
 setup:
@@ -26,6 +27,9 @@ security: audit security-tests
 
 build:
 	bin/build.sh
+
+backup:
+	bin/backup.sh
 
 docker-smoke:
 	bin/docker-smoke.sh
