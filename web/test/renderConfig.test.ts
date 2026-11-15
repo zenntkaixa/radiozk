@@ -10,7 +10,7 @@ const conf = read('docker', 'security-headers.conf');
 const text = read('render.yaml');
 const blueprint = parse(text);
 
-type Env = { key: string; value?: string; fromDatabase?: { name: string; property: string } };
+type Env = { key: string; value?: string; sync?: boolean };
 type Service = { name: string; runtime: string; region?: string; rootDir?: string; envVars: Env[]; healthCheckPath?: string; staticPublishPath?: string; headers?: { path: string; name: string; value: string }[]; routes?: { type: string; source: string; destination: string }[] };
 const services: Service[] = blueprint.services;
 const api = services.find((s) => s.name === NAMES.api)!;
@@ -22,15 +22,13 @@ describe('render.yaml', () => {
     expect(text).toBe(buildRenderYaml(conf));
   });
 
-  it('defines the database, the API and the static site, and wires the API to the database', () => {
-    expect(blueprint.databases.map((d: { name: string }) => d.name)).toEqual([NAMES.db]);
+  it('defines the API and the static site, with the database outside Render: DATABASE_URL is a dashboard secret', () => {
+    expect(services.map((s) => s.name)).toEqual([NAMES.api, NAMES.web]);
     expect(api.runtime).toBe('node');
     expect(web.runtime).toBe('static');
-    expect(env(api, 'DATABASE_URL')?.fromDatabase).toEqual({ name: NAMES.db, property: 'connectionString' });
-  });
-
-  it('puts the database and the API in the same region (it cannot be changed later)', () => {
-    expect(blueprint.databases[0].region).toBe(api.region);
+    expect(blueprint.databases).toBeUndefined(); // Render's free database expires after 30 days
+    expect(env(api, 'DATABASE_URL')).toEqual({ key: 'DATABASE_URL', sync: false }); // no value in the repo
+    expect(text).not.toMatch(/postgres(ql)?:\/\//); // never a connection string in the file
   });
 
   it('configures the API for Render: bind to all interfaces, trust the one proxy hop, health check on a real route', () => {
