@@ -76,12 +76,15 @@ export default function About() {
         </Card>
       </div>
 
-      <Link
-        to="/"
-        className="mt-6 inline-flex min-h-11 items-center rounded-full bg-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-indigo-500/40 hover:bg-indigo-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300"
-      >
-        ▶ Back to the radio
-      </Link>
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <Link
+          to="/"
+          className="inline-flex min-h-11 items-center rounded-full bg-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-indigo-500/40 hover:bg-indigo-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300"
+        >
+          ▶ Back to the radio
+        </Link>
+        <Link to="/whats-new" className={`${link} inline-flex min-h-11 items-center`}>What's new</Link>
+      </div>
     </>
   );
 }
