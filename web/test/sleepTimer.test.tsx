@@ -83,6 +83,14 @@ describe('sleep timer', () => {
     expect(screen.queryByText(/Stops in/)).toBeNull();
     expect(vol()).toBe(0.8);
   });
+
+  it('counts down in m:ss every second', async () => {
+    show(<RadioPlayer />);
+    await userEvent.selectOptions(screen.getByLabelText('Sleep timer'), '15');
+    expect(screen.getByText('Stops in 15:00')).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(61000));
+    expect(screen.getByText('Stops in 13:59')).toBeInTheDocument();
+  });
 });
 
 describe('thank-you line', () => {
@@ -95,5 +103,17 @@ describe('thank-you line', () => {
     show(<RadioPlayer />);
     expect(screen.getByText(/5 listening with you/)).toBeInTheDocument();
     expect(screen.queryByText(/Arigatou/)).toBeNull(); // still before the first Play
+  });
+
+  it('reserves the line before the first Play, so the layout does not jump when the thank-you appears', () => {
+    stream.status = 'idle';
+    const idle = show(<RadioPlayer />);
+    const line = idle.container.querySelector('p.min-h-5');
+    expect(line).not.toBeNull();
+    expect(line).toBeEmptyDOMElement();
+    idle.unmount();
+    stream.status = 'playing';
+    const playing = show(<RadioPlayer />);
+    expect(playing.container.querySelector('p.min-h-5')).toHaveTextContent('Arigatou for tuning in');
   });
 });

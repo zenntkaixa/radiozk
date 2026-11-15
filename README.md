@@ -131,7 +131,21 @@ After changing `package.json` or a lockfile, add `--build -V` so the `node_modul
 4. **Check that the rate limiter sees real visitors.** Request `/api/ratings?...` with a forged `X-Forwarded-For` header from two different networks, or watch whether a second visitor's votes count against the first one's 20 votes a minute. The API trusts one proxy hop (`TRUST_PROXY=1`); if the static site's `/api` proxy hid the visitor's address, all visitors would share one bucket. Checked on the first deploy (2026-11-01): the counter ignores a forged header and two different networks get separate counters, so the setting is right. Read the `ratelimit:` response header for the numbers, and run the two-network check again if Render changes its proxy.
 5. The names in `render.yaml` are also the `onrender.com` subdomains. If one is taken, Render appends a suffix; then fix the `/api` rewrite destination (in `web/scripts/render-config.mjs`) and regenerate.
 
-Free plan limits (as documented by Render, check the current terms): a free web service spins down after 15 minutes without traffic and takes about a minute to wake, so the first vote after a quiet spell is slow (the page and the stream are not affected); the free Neon plan (checked against Neon's own pages on 2026-11-15, see its current terms) gives 1 GB per project, no expiry and no card; the database suspends after 5 idle minutes and wakes in a few hundred milliseconds, and it keeps only 6 hours of restore history and one manual snapshot, so dump it if the ratings ever matter. Hitting a limit suspends the compute and does not delete data. The in-memory rate limiter resets whenever the API sleeps. Existing ratings in the Docker database are not migrated.
+Free plan limits (as documented by Render, check the current terms): a free web service spins down after 15 minutes without traffic and takes about a minute to wake, so the first vote after a quiet spell is slow (the page and the stream are not affected); the free Neon plan (checked against Neon's own pages on 2026-11-15, see its current terms) gives 1 GB per project, no expiry and no card; the database suspends after 5 idle minutes and wakes in a few hundred milliseconds, and it keeps only 6 hours of restore history and one manual snapshot, so dump it if the ratings ever matter (see Backups below). Hitting a limit suspends the compute and does not delete data. The in-memory rate limiter resets whenever the API sleeps. Existing ratings in the Docker database are not migrated.
+
+### Backups
+
+The ratings table is the only stored data (presence is in memory and Liked songs live in each browser). `bin/backup.sh` (`make backup`) dumps a database to `dev/backups/radiozk-<time>.sql.gz` (plain SQL, no owners or grants; the folder is git-ignored and created private, because the dump holds anonymous listener ids). You run it with your own connection string: from the Neon console copy the string for the `neondb` database, then run `BACKUP_DATABASE_URL='postgresql://…' bin/backup.sh`, or just `bin/backup.sh` in a terminal and paste it when asked (the prompt is hidden). The string is never printed or saved, and a failed or wrong-database dump leaves no file behind. To check a dump, restore it into a throwaway database and never into production:
+
+```
+source bin/env.sh
+bin/psql.sh -d postgres -c 'create database radiozk_restore_check'
+gunzip -c dev/backups/radiozk-<time>.sql.gz | bin/psql.sh -d radiozk_restore_check
+bin/psql.sh -d radiozk_restore_check -c 'select count(*) from ratings'
+bin/psql.sh -d postgres -c 'drop database radiozk_restore_check'
+```
+
+This is a manual copy outside Neon, taken when you decide. A Neon snapshot (one allowed on the free plan, made in the console) is quicker but lives inside the same project. An automated dump in GitHub Actions is not recommended: files an Action uploads in a public repository can be downloaded by anyone signed in to GitHub, and the dump has listener ids. The data is tiny today, so a dump is optional until ratings matter (a few hundred, or before the site is promoted widely).
 
 ## Scripts
 
@@ -144,6 +158,7 @@ Free plan limits (as documented by Render, check the current terms): a free web 
 | Production build | `bin/build.sh` |
 | Type check | `cd web && npm run typecheck` |
 | SQL shell | `bin/psql.sh` |
+| Dump a database to `dev/backups/` (needs your connection string) | `bin/backup.sh` (or `make backup`) |
 | Unit and API tests | `bin/test.sh` (or `make test`) |
 | Dependency audit + security tests | `make security` |
 | End-to-end tests | `cd web && npm run e2e` |

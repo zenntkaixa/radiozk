@@ -14,8 +14,8 @@ export type RadioValue = ReturnType<typeof useRadioStream> & {
   listening: number | null;
   volume: number;
   setVolume: (v: number) => void;
-  /** Sleep timer: the chosen length in minutes and the whole minutes left (rounded up), or null when off. */
-  sleep: { minutes: number; left: number } | null;
+  /** Sleep timer: the chosen length in minutes the whole minutes left (rounded up) and the deadline timestamp, or null when off. */
+  sleep: { minutes: number; left: number; at: number } | null;
   setSleep: (minutes: number | null) => void;
 };
 
@@ -98,7 +98,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   }, [togglePlay, onRadioPage, status]);
 
   return (
-    <RadioContext.Provider value={{ ...stream, track, trackError, listening, volume, setVolume, sleep: sleepSet && { minutes: sleepSet.minutes, left: sleepLeft }, setSleep }}>
+    <RadioContext.Provider value={{ ...stream, track, trackError, listening, volume, setVolume, sleep: sleepSet && { minutes: sleepSet.minutes, left: sleepLeft, at: sleepSet.at }, setSleep }}>
       <audio ref={audioRef} {...audioProps} />
       {children}
     </RadioContext.Provider>

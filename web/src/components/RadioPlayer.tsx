@@ -4,6 +4,21 @@ import { saveDataRequested } from '../idle.ts';
 import ShareButton from './ShareButton.tsx';
 import { SLEEP_CHOICES, prefersReducedMotion, presenceParts } from '../playerUi.ts';
 
+/** Live "Stops in m:ss", hidden from screen readers (the per-minute status above speaks instead). */
+function Countdown({ at }: { at: number }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const s = Math.max(0, Math.ceil((at - now) / 1000));
+  return (
+    <span aria-hidden="true" className="tabular-nums text-slate-500 dark:text-slate-400">
+      Stops in {Math.floor(s / 60)}:{String(s % 60).padStart(2, '0')}
+    </span>
+  );
+}
+
 /** The player card of the Radio page. The audio itself lives in RadioProvider and keeps going when this unmounts. */
 export default function RadioPlayer() {
   const { audioRef, mode, quality, status, info, notice, togglePlay, changeQuality, listening, volume, setVolume, sleep, setSleep } = useRadio();
@@ -71,12 +86,11 @@ export default function RadioPlayer() {
         <canvas ref={setCanvas} aria-hidden="true" className="h-12 min-w-0 flex-1" />
       </div>
 
-      {/* Each piece stays whole when the line wraps on a phone; the thank-you waits for the first Play. */}
-      {presence.length > 0 && (
-        <p className="mt-4 flex flex-wrap gap-x-4 text-sm text-slate-600 dark:text-slate-400">
-          {presence.map((t) => <span key={t}>{t}</span>)}
-        </p>
-      )}
+      {/* Always rendered, so the layout does not jump when the thank-you appears on the first Play (one line is reserved).
+          Each piece stays whole when the line wraps on a phone. */}
+      <p className="mt-4 flex min-h-5 flex-wrap gap-x-4 text-sm text-slate-600 dark:text-slate-400">
+        {presence.map((t) => <span key={t}>{t}</span>)}
+      </p>
 
       <div className="mt-4 flex items-center gap-3">
         <label htmlFor="vol" className="text-sm text-slate-600 dark:text-slate-400">Volume</label>
@@ -105,7 +119,12 @@ export default function RadioPlayer() {
             <option key={m} value={m}>{m} minutes</option>
           ))}
         </select>
-        {sleep && <span className="text-slate-500 dark:text-slate-400" role="status">Stops in {sleep.left} min</span>}
+        {sleep && (
+          <>
+            <span className="sr-only" role="status">Stops in {sleep.left} min</span>
+            <Countdown at={sleep.at} />
+          </>
+        )}
         <span className="sm:ml-auto"><ShareButton /></span>
       </div>
 

@@ -1,0 +1,57 @@
+name: e2e
+
+# Manual only: Actions tab > e2e > Run workflow, or `gh workflow run e2e.yml`. The browser test plays the real Radio
+# Calico stream (a third party's) and casts votes, so it runs on demand against a throwaway Docker stack, never on
+# push or on a schedule: a nightly run would pull their stream every night and turn red whenever their CDN stalls.
+on:
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: Browser to drive
+        type: choice
+        options: [firefox, chromium]
+        default: firefox
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: e2e (${{ inputs.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # The same throwaway stack as in CLAUDE.md; it lives and dies inside this runner.
+      COMPOSE_PROJECT_NAME: radiozk-e2e
+      TAG: e2e
+      WEB_PORT: '18081'
+      POSTGRES_PASSWORD: ci-e2e
+      BROWSER: ${{ inputs.browser }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - name: Install the browser
+        run: npx playwright install --with-deps ${{ inputs.browser }}
+        working-directory: web
+      - name: Start the throwaway stack
+        run: docker compose up -d --build --wait --wait-timeout 240
+      - name: Run the e2e
+        # The runner context is not available in a job-level env, so the screenshots folder is set here.
+        run: SHOTS="$RUNNER_TEMP/shots" npm run e2e -- http://localhost:18081
+        working-directory: web
+      - name: Stack logs (on failure)
+        if: failure()
+        run: docker compose logs --tail=80
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
