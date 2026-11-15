@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MIN_LISTENERS_SHOWN, isPlayPauseKey, pageTitle, presenceLine, searchUrl, splitTitle } from '../src/playerUi.ts';
+import { MIN_LISTENERS_SHOWN, isPlayPauseKey, pageTitle, presenceLine, searchUrl, sleepGain, splitTitle } from '../src/playerUi.ts';
 
 const key = (target: Element | null, over: Partial<{ code: string; repeat: boolean; ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }> = {}) =>
   ({ code: 'Space', repeat: false, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, target, ...over });
@@ -84,5 +84,15 @@ describe('splitTitle', () => {
 
   it('never strips a title to nothing', () => {
     expect(splitTitle('(2015 Remaster)')).toEqual({ main: '(2015 Remaster)', extra: '' });
+  });
+});
+
+describe('sleepGain', () => {
+  it('is full volume until the last five seconds, then fades to silence', () => {
+    expect(sleepGain(60_000)).toBe(1);
+    expect(sleepGain(5000)).toBe(1);
+    expect(sleepGain(2500)).toBe(0.5);
+    expect(sleepGain(0)).toBe(0);
+    expect(sleepGain(-10)).toBe(0);
   });
 });

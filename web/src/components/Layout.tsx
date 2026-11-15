@@ -16,6 +16,7 @@ function Shell() {
             <span>radio<span className="text-indigo-600 dark:text-indigo-400">zk</span></span>
           </span>
           <NavLink to="/" end className={link}>Radio</NavLink>
+          <NavLink to="/liked" className={link}>Liked</NavLink>
           <NavLink to="/about" className={link}>About</NavLink>
         </nav>
       </header>
