@@ -58,6 +58,8 @@ bin/psql.sh -c 'truncate ratings'   # clean up afterwards
 
 It checks page render, FLAC and AAC playback advancing (it waits until the audio has advanced 5 s of media within 25 s, so a CDN rebuffer does not fail it), ratings (including persistence across a reload), the visualizer drawing while the audio plays, the listener heartbeat, the mini-player and the music continuing when the visitor opens About, tab titles, routing, and that the Content-Security-Policy blocks nothing the player needs. It casts real votes in your development database, hence the cleanup step. It uses Playwright's bundled Firefox from `~/.cache/ms-playwright`. The test machine has no audio device, so it proves that audio decodes and advances, not that it is audible.
 
+The e2e can also run in GitHub Actions: the `e2e` workflow (`.github/workflows/e2e.yml`, manual only, Firefox or Chromium) starts the same throwaway Docker stack inside the runner and tears it down afterwards. Start it from the Actions tab or with `gh workflow run e2e.yml`. It is not scheduled because it plays the real station's stream and casts votes; it needs to be on `main` before GitHub lists it.
+
 The same checks run in Chromium with `cd web && npm run e2e:chromium` (once: `npx playwright install chromium`, about 120 MB in `~/.cache/ms-playwright`). It exercises the hls.js path, the FLAC and AAC variants and the Content-Security-Policy in a Chrome engine (Chromium passes the same checks). Safari/iOS still use native HLS and are not covered.
 
 ## What each layer covers
