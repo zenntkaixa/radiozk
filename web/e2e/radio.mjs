@@ -63,7 +63,7 @@ try {
   check('now playing shows a track', !!title && title !== 'Unknown title', title ?? 'none');
   check('quality badge shown', (await now.getByText(/\d+-bit \/ [\d.]+ kHz/).count()) === 1);
   const coverOk = await now
-    .locator('img')
+    .locator('img:not([aria-hidden])') // the blurred backdrop copy is aria-hidden
     .evaluate((i) => (i.complete && i.naturalWidth > 0 ? true : new Promise((res) => { i.onload = () => res(true); i.onerror = () => res(false); setTimeout(() => res(false), 10000); })))
     .catch(() => false);
   check('cover image loaded', coverOk);

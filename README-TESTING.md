@@ -13,7 +13,7 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 57 backend (16 unit + 23 API + 18 security), 13 parser, 102 UI, 33 e2e checks.
+Current counts: 57 backend (16 unit + 23 API + 18 security), 13 parser, 103 UI, 33 e2e checks.
 
 The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks the security headers on pages, assets, API and error responses, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 

@@ -5,12 +5,18 @@ describe('barLevels', () => {
   it('returns one level per bar, scaled to 0..1, taking the loudest bin of each group', () => {
     const data = new Uint8Array(128);
     data[1] = 255;
-    data[100] = 51;
+    data[60] = 51;
     const levels = barLevels(data);
     expect(levels).toHaveLength(BARS);
     expect(levels[0]).toBe(1);
-    expect(Math.max(...levels.slice(1))).toBeCloseTo(0.2);
+    expect(Math.max(...levels.slice(1))).toBeCloseTo(0.2 ** 1.6); // the curve pulls mid levels down
     expect(levels.every((l) => l >= 0 && l <= 1)).toBe(true);
+  });
+
+  it('ignores the top of the spectrum, which would otherwise pin the last bars', () => {
+    const data = new Uint8Array(128);
+    data.fill(255, 100);
+    expect(barLevels(data).every((l) => l === 0)).toBe(true);
   });
 
   it('is silent for silence, and ignores the DC bin', () => {

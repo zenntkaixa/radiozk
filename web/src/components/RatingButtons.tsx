@@ -58,7 +58,7 @@ export default function RatingButtons({ artist, title }: { artist: string; title
       }`}
     >
       <span aria-hidden="true">{icon}</span>
-      <span className="tabular-nums">{count ?? '–'}</span>
+      {count !== 0 && <span className="tabular-nums">{count ?? '–'}</span>}
     </button>
   );
 

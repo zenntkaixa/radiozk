@@ -7,7 +7,10 @@
 // left alone.
 
 export const BARS = 32;
-const COLOR = '#6366f1'; // indigo-500: readable on both the light and the dark card
+const TOP_FRACTION = 0.7; // ignore the top of the spectrum (above ~16 kHz at 48 kHz): empty or noise, it would pin the right-hand bars
+const CURVE = 1.6; // >1 pulls the middle levels down so the bars move instead of sitting near the top
+// Indigo at the bottom, pink at the tip: a loud bar reaches the pink. Readable on both the light and the dark card.
+const GRADIENT: [string, string] = ['#6366f1', '#ec4899'];
 
 type Ctx = Pick<AudioContext, 'state' | 'resume' | 'close' | 'createAnalyser' | 'createMediaElementSource' | 'destination'> &
   Partial<Pick<AudioContext, 'addEventListener'>>;
@@ -23,12 +26,13 @@ const graphs = new WeakMap<HTMLMediaElement, Graph>();
 /** Collapses FFT bins into `bars` levels (0..1), spaced on a log scale so bass and treble get similar room. */
 export function barLevels(data: Uint8Array, bars = BARS): number[] {
   const levels: number[] = [];
+  const usable = Math.floor(data.length * TOP_FRACTION);
   let from = 1; // bin 0 is DC
   for (let i = 0; i < bars; i++) {
-    const to = Math.min(data.length, Math.max(from + 1, Math.round(data.length ** ((i + 1) / bars))));
+    const to = Math.min(usable, Math.max(from + 1, Math.round(usable ** ((i + 1) / bars))));
     let max = 0;
     for (let k = from; k < to; k++) max = Math.max(max, data[k]);
-    levels.push(max / 255);
+    levels.push((max / 255) ** CURVE);
     from = to;
   }
   return levels;
@@ -53,6 +57,9 @@ export async function ensureGraph(audio: HTMLMediaElement, makeCtx: () => Ctx = 
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 256;
   analyser.smoothingTimeConstant = 0.8;
+  // The default range (-100..-30 dB) is saturated by loud lossless music; lift the floor and the ceiling so peaks leave headroom.
+  analyser.minDecibels = -85;
+  analyser.maxDecibels = -25;
   const source = ctx.createMediaElementSource(audio);
   source.connect(analyser);
   analyser.connect(ctx.destination);
@@ -74,12 +81,19 @@ function paint(canvas: HTMLCanvasElement, levels: number[]) {
   const g = canvas.getContext('2d');
   if (!g) return;
   g.clearRect(0, 0, w, h);
-  g.fillStyle = COLOR;
+  const fill = g.createLinearGradient(0, h, 0, 0);
+  fill.addColorStop(0, GRADIENT[0]);
+  fill.addColorStop(1, GRADIENT[1]);
+  g.fillStyle = fill;
   const slot = w / levels.length;
   const bar = Math.max(1, slot * 0.6);
   levels.forEach((l, i) => {
     const bh = Math.max(2 * dpr, l * h);
-    g.fillRect(i * slot + (slot - bar) / 2, h - bh, bar, bh);
+    const x = i * slot + (slot - bar) / 2;
+    g.beginPath();
+    if (typeof g.roundRect === 'function') g.roundRect(x, h - bh, bar, bh, Math.min(bar / 2, 3 * dpr));
+    else g.rect(x, h - bh, bar, bh);
+    g.fill();
   });
 }
 
