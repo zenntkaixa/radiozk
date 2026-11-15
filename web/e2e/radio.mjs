@@ -67,6 +67,7 @@ try {
     .evaluate((i) => (i.complete && i.naturalWidth > 0 ? true : new Promise((res) => { i.onload = () => res(true); i.onerror = () => res(false); setTimeout(() => res(false), 10000); })))
     .catch(() => false);
   check('cover image loaded', coverOk);
+  check('recently played titles link to a YouTube search', ((await now.locator('ol li a').first().getAttribute('href').catch(() => '')) ?? '').startsWith('https://www.youtube.com/results?search_query='));
   check('recently played lists tracks', (await now.locator('ol li').count()) >= 1, `${await now.locator('ol li').count()} items`);
   await page.screenshot({ path: `${shots}/1-loaded.png`, fullPage: true });
 
@@ -89,6 +90,9 @@ try {
   check('audio plays (advances 5s of media within 25s)', m.advanced >= 5 && !m.paused && !m.err, `advanced ${m.advanced.toFixed(1)}s in ${m.wall.toFixed(1)}s, err=${m.err}`);
   check('status says Live', /Live/.test(statusText ?? ''), statusText);
   check('lossless FLAC selected', /FLAC/.test(statusText ?? '') && /lossless/.test(statusText ?? ''), statusText);
+  check('visualizer draws bars while playing (the audio is not muted by it)', await page.waitForFunction(() => { const c = document.querySelector('canvas'); return c && c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v > 0); }, null, { timeout: 10000 }).then(() => true, () => false) && !m.paused);
+  check('the heartbeat counts this listener in /api/presence', await page.waitForFunction(() => fetch('/api/presence').then((r) => r.json()).then((j) => j.listening >= 1), null, { timeout: 10000 }).then(() => true, () => false));
+  check('player shows the thank-you line', (await page.getByText('Arigatou for tuning in').count()) === 1);
   await page.screenshot({ path: `${shots}/2-playing.png`, fullPage: true });
 
   // --- tab title and the Space key ---
