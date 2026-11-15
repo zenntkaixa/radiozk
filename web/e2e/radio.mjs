@@ -190,6 +190,12 @@ try {
   // --- routing / deep links ---
   await page.goto(`${base}/about`);
   check('deep link /about works', await page.getByRole('heading', { name: 'About' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
+  check('About sets the tab title', (await page.title()) === 'About · radiozk', await page.title());
+  check('About links out as buttons (GitHub, LinkedIn, Portfolio)', (await page.locator('a[target=_blank][href*="github.com/zenntkaixa"], a[target=_blank][href*="linkedin.com"], a[target=_blank][href*="zenntkaixa.dev"]').count()) === 3);
+  await page.getByRole('link', { name: 'Back to the radio' }).click();
+  check('"Back to the radio" returns to the player', await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
+  check('the base tab title is back on the radio page', (await page.title()).startsWith('radiozk'), await page.title());
+  await page.getByRole('link', { name: 'About', exact: true }).click();
   await page.getByRole('link', { name: 'Radio', exact: true }).click();
   check('client-side nav to Radio', await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
   await page.goto(`${base}/nope`);
