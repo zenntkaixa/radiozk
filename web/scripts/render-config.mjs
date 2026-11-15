@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-export const NAMES = { db: 'zenntkaixa-radiozk-db', api: 'zenntkaixa-radiozk-api', web: 'zenntkaixa-radiozk' };
+export const NAMES = { api: 'zenntkaixa-radiozk-api', web: 'zenntkaixa-radiozk' };
 const q = (value) => JSON.stringify(value); // a JSON string is a valid double-quoted YAML scalar
 
 export function buildRenderYaml(headersConf) {
@@ -18,16 +18,9 @@ export function buildRenderYaml(headersConf) {
 #
 # The names below are also the onrender.com subdomains. If one is already taken Render appends a suffix, and then
 # the /api rewrite destination (and this file) must be updated to the real API URL.
-# The database and the API must share a region (it cannot be changed later). Both use the free plan here; a free
-# database expires after 30 days and a free web service sleeps when idle (see README.md).
-
-databases:
-  - name: ${NAMES.db}
-    plan: free
-    region: oregon
-    databaseName: radiozk
-    user: radiozk
-    postgresMajorVersion: "18"
+# There is no database here: Render's free database expires after 30 days, so the API uses an external PostgreSQL
+# (Neon, free plan). Its connection string is a secret, set once in the Render dashboard (see "Render" in README.md).
+# The free web service sleeps when idle.
 
 services:
   # The API: the Express app from app/, listening on Render's PORT.
@@ -42,9 +35,7 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: ${NAMES.db}
-          property: connectionString
+        sync: false # the Neon connection string, set in the dashboard; never committed
       - key: HOST
         value: 0.0.0.0
       - key: TRUST_PROXY

@@ -3,16 +3,9 @@
 #
 # The names below are also the onrender.com subdomains. If one is already taken Render appends a suffix, and then
 # the /api rewrite destination (and this file) must be updated to the real API URL.
-# The database and the API must share a region (it cannot be changed later). Both use the free plan here; a free
-# database expires after 30 days and a free web service sleeps when idle (see README.md).
-
-databases:
-  - name: zenntkaixa-radiozk-db
-    plan: free
-    region: oregon
-    databaseName: radiozk
-    user: radiozk
-    postgresMajorVersion: "18"
+# There is no database here: Render's free database expires after 30 days, so the API uses an external PostgreSQL
+# (Neon, free plan). Its connection string is a secret, set once in the Render dashboard (see "Render" in README.md).
+# The free web service sleeps when idle.
 
 services:
   # The API: the Express app from app/, listening on Render's PORT.
@@ -27,9 +20,7 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: zenntkaixa-radiozk-db
-          property: connectionString
+        sync: false # the Neon connection string, set in the dashboard; never committed
       - key: HOST
         value: 0.0.0.0
       - key: TRUST_PROXY
