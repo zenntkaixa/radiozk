@@ -13,8 +13,22 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
 
   if (!data) {
     return (
-      <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
-        {error ? 'Track info is unavailable right now.' : 'Loading track info…'}
+      <section className="border-t border-slate-100 p-6 text-sm text-slate-500">
+        {error ? (
+          'Track info is unavailable right now.'
+        ) : (
+          <>
+            <p className="sr-only">Loading track info…</p>
+            <div aria-hidden="true" className="flex gap-4 motion-safe:animate-pulse">
+              <div className="h-28 w-28 shrink-0 rounded-lg bg-slate-100 sm:h-40 sm:w-40" />
+              <div className="flex-1 space-y-3 pt-1">
+                <div className="h-5 w-3/4 rounded bg-slate-100" />
+                <div className="h-4 w-1/2 rounded bg-slate-100" />
+                <div className="h-4 w-1/3 rounded bg-slate-100" />
+              </div>
+            </div>
+          </>
+        )}
       </section>
     );
   }
@@ -23,23 +37,23 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
   const subtitle = [data.album, data.year].filter(Boolean).join(' · ');
 
   return (
-    <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm" aria-label="Now playing">
+    <section className="border-t border-slate-100 p-6" aria-label="Now playing">
       <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Now playing</h2>
       <div className="mt-3 flex gap-4">
         {failedCover === data.coverUrl ? (
-          <div className="h-28 w-28 shrink-0 rounded-lg bg-slate-100" aria-hidden="true" />
+          <div className="h-28 w-28 shrink-0 rounded-lg bg-slate-100 sm:h-40 sm:w-40" aria-hidden="true" />
         ) : (
           <img
             src={data.coverUrl}
             alt={data.album ? `Cover of ${data.album}` : 'Album cover'}
-            width={112}
-            height={112}
+            width={160}
+            height={160}
             onError={() => setFailedCover(data.coverUrl)}
-            className="h-28 w-28 shrink-0 rounded-lg bg-slate-100 object-cover shadow"
+            className="h-28 w-28 shrink-0 rounded-lg bg-slate-100 object-cover shadow sm:h-40 sm:w-40"
           />
         )}
         <div className="min-w-0">
-          <p className="text-lg font-semibold leading-snug">{data.title || 'Unknown title'}</p>
+          <p className="text-lg font-semibold leading-snug sm:text-2xl">{data.title || 'Unknown title'}</p>
           <p className="text-slate-700">{data.artist || 'Unknown artist'}</p>
           {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
           {q && (

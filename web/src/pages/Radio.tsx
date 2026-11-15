@@ -7,8 +7,10 @@ export default function Radio() {
   return (
     <>
       <h1 className="mb-4 text-2xl font-bold">Listen live</h1>
-      <RadioPlayer track={data} />
-      <NowPlaying data={data} error={error} />
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <RadioPlayer track={data} />
+        <NowPlaying data={data} error={error} />
+      </div>
       <p className="mt-4 text-sm text-slate-500">
         Music from{' '}
         <a className="underline underline-offset-2 hover:text-slate-700" href="https://www.radio-calico.com/" target="_blank" rel="noopener noreferrer">
