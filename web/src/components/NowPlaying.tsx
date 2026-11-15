@@ -50,9 +50,10 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
         />
       )}
       <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Now playing</h2>
-      <div className="mt-3 flex gap-4">
+      {/* Cover left; on wider screens the thumbs sit beside its bottom edge instead of leaving that space empty. */}
+      <div className="mt-3 grid grid-cols-[auto_1fr] gap-x-4">
         {failedCover === data.coverUrl ? (
-          <div className="h-28 w-28 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800 sm:h-40 sm:w-40" aria-hidden="true" />
+          <div className="h-28 w-28 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800 sm:row-span-2 sm:h-40 sm:w-40" aria-hidden="true" />
         ) : (
           <img
             src={data.coverUrl}
@@ -60,7 +61,7 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
             width={160}
             height={160}
             onError={() => setFailedCover(data.coverUrl)}
-            className="h-28 w-28 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800 object-cover shadow sm:h-40 sm:w-40"
+            className="h-28 w-28 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800 object-cover shadow sm:row-span-2 sm:h-40 sm:w-40"
           />
         )}
         <div className="min-w-0">
@@ -74,16 +75,19 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
             </p>
           )}
         </div>
+        {data.title && (
+          <div className="col-span-2 sm:col-span-1 sm:self-end">
+            <RatingButtons artist={data.artist} title={data.title} />
+          </div>
+        )}
       </div>
-
-      {data.title && <RatingButtons artist={data.artist} title={data.title} />}
 
       {data.previous.length > 0 && (
         <>
           <h3 className="mt-6 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Recently played</h3>
           <ol className="mt-2 divide-y divide-slate-100 dark:divide-slate-800 text-sm">
             {data.previous.map((t, i) => (
-              <li key={`${i}-${t.artist}-${t.title}`}>
+              <li key={`${i}-${t.artist}-${t.title}`} className="flex flex-wrap items-center gap-x-1.5">
                 <a
                   href={searchUrl(t.artist, t.title)}
                   target="_blank"
@@ -93,7 +97,7 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
                 >
                   {t.title}
                 </a>
-                {t.artist && <span className="text-slate-500 dark:text-slate-400"> — {t.artist}</span>}
+                {t.artist && <span className="text-slate-500 dark:text-slate-400">— {t.artist}</span>}
               </li>
             ))}
           </ol>

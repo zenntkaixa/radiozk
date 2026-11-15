@@ -70,7 +70,7 @@ export default function RatingButtons({ artist, title }: { artist: string; title
   );
 
   return (
-    <>
+    <div>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="shrink-0 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">Rate this track</span>
         {button(1, 'I like this track', ratings?.up, '👍')}
@@ -93,6 +93,6 @@ export default function RatingButtons({ artist, title }: { artist: string; title
           <button type="button" onClick={() => setNudge(false)} aria-label="Dismiss" className="min-h-11 min-w-11 shrink-0 rounded-full focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300">✕</button>
         </p>
       )}
-    </>
+    </div>
   );
 }
