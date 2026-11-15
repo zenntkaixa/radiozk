@@ -7,13 +7,13 @@ export default function Radio() {
   return (
     <>
       <h1 className="mb-4 text-2xl font-bold">Listen live</h1>
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <RadioPlayer track={data} />
         <NowPlaying data={data} error={error} />
       </div>
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
         Music from{' '}
-        <a className="underline underline-offset-2 hover:text-slate-700" href="https://www.radio-calico.com/" target="_blank" rel="noopener noreferrer">
+        <a className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200" href="https://www.radio-calico.com/" target="_blank" rel="noopener noreferrer">
           Radio Calico
         </a>
         's public stream, as lossless FLAC over HLS, with an AAC fallback for browsers that can't decode FLAC.

@@ -34,7 +34,7 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
   const label = { idle: 'Tap play to listen', buffering: 'Buffering…', playing: 'Live', paused: 'Paused', error: 'Error' }[status];
 
   if (mode === 'unsupported') {
-    return <p className="text-red-700">This browser can't play HLS streams.</p>;
+    return <p className="text-red-700 dark:text-red-400">This browser can't play HLS streams.</p>;
   }
 
   return (
@@ -55,12 +55,12 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
         </button>
         <div>
           <p className="text-lg font-semibold">radiozk live</p>
-          <p className="flex items-center gap-2 text-sm text-slate-600" role="status">
-            <span className={`h-2 w-2 rounded-full ${status === 'playing' ? 'animate-pulse bg-red-500' : 'bg-slate-300'}`} />
+          <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400" role="status">
+            <span className={`h-2 w-2 rounded-full ${status === 'playing' ? 'animate-pulse bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
             {label}
-            {info && <span className="text-slate-500">·</span>}
+            {info && <span className="text-slate-500 dark:text-slate-400">·</span>}
             {info && (
-              <span className={info.lossless ? 'font-medium text-indigo-600' : ''}>
+              <span className={info.lossless ? 'font-medium text-indigo-600 dark:text-indigo-400' : ''}>
                 {info.codec}
                 {info.lossless && ' · lossless'}
               </span>
@@ -70,7 +70,7 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
       </div>
 
       <div className="mt-6 flex items-center gap-3">
-        <label htmlFor="vol" className="text-sm text-slate-600">Volume</label>
+        <label htmlFor="vol" className="text-sm text-slate-600 dark:text-slate-400">Volume</label>
         <input
           id="vol"
           type="range"
@@ -94,8 +94,8 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
           ))}
         </fieldset>
       )}
-      {mode === 'native' && <p className="mt-4 text-sm text-slate-500">Your browser plays the stream natively and chooses the quality automatically.</p>}
-      {notice && <p className="mt-4 text-sm text-amber-700">{notice}</p>}
+      {mode === 'native' && <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Your browser plays the stream natively and chooses the quality automatically.</p>}
+      {notice && <p className="mt-4 text-sm text-amber-700 dark:text-amber-400">{notice}</p>}
     </section>
   );
 }

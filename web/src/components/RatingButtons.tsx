@@ -54,7 +54,7 @@ export default function RatingButtons({ artist, title }: { artist: string; title
       className={`flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 disabled:opacity-50 ${
         ratings?.mine === v
           ? 'border-indigo-600 bg-indigo-600 text-white'
-          : 'border-slate-300 bg-white text-slate-700 hover:border-indigo-400'
+          : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-indigo-400'
       }`}
     >
       <span aria-hidden="true">{icon}</span>
@@ -67,7 +67,7 @@ export default function RatingButtons({ artist, title }: { artist: string; title
       {button(1, 'I like this track', ratings?.up, '👍')}
       {button(-1, "I don't like this track", ratings?.down, '👎')}
       {failed && (
-        <span role="alert" className="text-xs text-amber-700">
+        <span role="alert" className="text-xs text-amber-700 dark:text-amber-400">
           Couldn't save your rating.
         </span>
       )}
