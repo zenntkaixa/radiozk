@@ -10,7 +10,7 @@ export default function Radio() {
       <RadioPlayer track={data} />
       <NowPlaying data={data} error={error} />
       <p className="mt-4 text-sm text-slate-500">
-        Streamed as lossless FLAC over HLS, with an AAC fallback for browsers that can't decode FLAC.
+        Music from Radio Calico's public stream, as lossless FLAC over HLS, with an AAC fallback for browsers that can't decode FLAC.
       </p>
     </>
   );
