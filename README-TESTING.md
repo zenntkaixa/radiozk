@@ -13,7 +13,7 @@ How the tests are organised, how to run them, and how to add new ones. For setti
 | Frontend UI | `web/test/*.test.{ts,tsx}` | Vitest + Testing Library + jsdom | nothing | seconds |
 | End-to-end | `web/e2e/radio.mjs` | Playwright, headless Firefox | the whole stack running, a current build | about a minute |
 
-Current counts: 57 backend (16 unit + 23 API + 18 security), 13 parser, 117 UI, 44 e2e checks.
+Run `bin/test.sh` for the totals. They are not kept here: a hand-edited count went stale with almost every PR.
 
 The first five layers run in CI, together with a Docker smoke test (`bin/docker-smoke.sh`: builds the production images, hits the endpoints through nginx, checks the security headers on pages, assets, API and error responses, checks a vote survives a database restart). The e2e layer does not: it needs the real stream and a full local stack.
 
@@ -56,9 +56,9 @@ cd web && npm run e2e               # optional URL argument, default http://loca
 bin/psql.sh -c 'truncate ratings'   # clean up afterwards
 ```
 
-It checks page render, FLAC and AAC playback advancing (it waits until the audio has advanced 5 s of media within 25 s, so a CDN rebuffer does not fail it), ratings (including persistence across a reload), routing, and that the Content-Security-Policy blocks nothing the player needs. It casts real votes in your development database, hence the cleanup step. It uses Playwright's bundled Firefox from `~/.cache/ms-playwright`. The test machine has no audio device, so it proves that audio decodes and advances, not that it is audible.
+It checks page render, FLAC and AAC playback advancing (it waits until the audio has advanced 5 s of media within 25 s, so a CDN rebuffer does not fail it), ratings (including persistence across a reload), the visualizer drawing while the audio plays, the listener heartbeat, the mini-player and the music continuing when the visitor opens About, tab titles, routing, and that the Content-Security-Policy blocks nothing the player needs. It casts real votes in your development database, hence the cleanup step. It uses Playwright's bundled Firefox from `~/.cache/ms-playwright`. The test machine has no audio device, so it proves that audio decodes and advances, not that it is audible.
 
-The same checks run in Chromium with `cd web && npm run e2e:chromium` (once: `npx playwright install chromium`, about 120 MB in `~/.cache/ms-playwright`). It exercises the hls.js path, the FLAC and AAC variants and the Content-Security-Policy in a Chrome engine (Chromium passes all 44 checks). Safari/iOS still use native HLS and are not covered.
+The same checks run in Chromium with `cd web && npm run e2e:chromium` (once: `npx playwright install chromium`, about 120 MB in `~/.cache/ms-playwright`). It exercises the hls.js path, the FLAC and AAC variants and the Content-Security-Policy in a Chrome engine (Chromium passes the same checks). Safari/iOS still use native HLS and are not covered.
 
 ## What each layer covers
 
@@ -73,7 +73,7 @@ Tests the pure functions in `app/src/validate.js` with no server or database:
 
 ### Presence: `app/test/presence.test.js`
 
-The in-memory listener count: unit tests of the store with a fake clock (expiry, one count per id, the memory cap) and black-box tests of `/api/presence` on ports 3105 and 3106 (database `radiozk_test_presence`): counting, the 400 without a listener id, `no-store`, and the per-listener and per-IP heartbeat limits.
+The in-memory listener count: unit tests of the store with a fake clock (expiry, one count per id, the memory cap) and black-box tests of `/api/presence` on ports 3105 and 3106 (database `radiozk_test_presence`): counting (one listener however the id is cased), the 400 without a listener id, `no-store`, and the per-listener and per-IP heartbeat limits.
 
 ### Backend API: `app/test/ratings.test.js`
 
@@ -103,7 +103,12 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 - `api.test.ts`: request URLs, the `x-listener-id` header, POST bodies and error mapping, with `fetch` stubbed.
 - `listenerId.test.ts`: UUID generation and persistence, behaviour when storage is blocked, and the fallback when `crypto.randomUUID` is missing. The module caches state, so each test loads a fresh copy.
 - `rating.test.ts`: `applyVote` as a pure function.
-- `playerUi.test.ts`: the Space-key rule and the tab title (`isPlayPauseKey`, `pageTitle`), as pure functions.
+- `playerUi.test.ts`: the Space-key rule, the tab title, the listener line, the YouTube search link and the version-note split (`isPlayPauseKey`, `pageTitle`, `presenceLine`, `searchUrl`, `splitTitle`), as pure functions.
+- `pageTitle.test.tsx`: the single owner of the tab title: the playing track wins over the page title on any page, and the base title comes back.
+- `visualizer.test.ts`: the bar levels, and `ensureGraph` building the audio graph only once the `AudioContext` is running, wrapping an element once and resuming a suspended context.
+- `usePresence.test.tsx`: heartbeats every 30 s only while playing, read-only polling otherwise (paused while the tab is hidden), and keeping the last count on failure.
+- `MiniPlayer.test.tsx`: the sticky bar shows on other pages once the radio has started, not on the Radio page, and drives playback; it shows a small cover, the title without its version note, and wraps long titles to two lines.
+- `About.test.tsx`: the heading rules the e2e depends on, the cards, the link buttons and the tab title.
 - `useRadioStream.test.tsx`: the playback hook with a fake `hls.js/light` and a controllable idle scheduler: nothing is loaded until idle, never in native mode, Save-Data and load failures (with retry), unmount while loading, Play before and after the player exists (including pressing it twice), FLAC pinning with the AAC fallback notice, and quality switches while paused, playing and mid-start. The fake is registered per test with `vi.doMock`, because Vitest caches a `vi.mock` factory's result across `resetModules()`.
 - `idle.test.ts`: `whenIdle` (delay, idle callback, waiting for images with a cap, cancelling) and `saveDataRequested`.
 - `useMediaSession.test.tsx`: the media session (and so the artwork download) stays untouched until playback has started, then follows track changes and keeps its metadata while paused.
@@ -153,7 +158,7 @@ The other two workflows in `.github/workflows/` belong to the Claude GitHub App 
 - SQL injection payloads in `artist`, `title` and the listener-id header are treated as data, and the table survives
 - one listener can't read or clear another listener's vote
 
-**Rate limiting.** The ratings endpoints are limited per client address (`app/src/rateLimit.js`: 120 reads and 20 votes per minute, in memory; `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RATE_LIMIT_WINDOW_MS` change them, `TRUST_PROXY` says which peers may set `X-Forwarded-For`). The security tests start two extra servers with tiny limits (ports 3102 and 3103, database `radiozk_test_security_rl`) and give each simulated client its own address through `X-Forwarded-For`; they check the 429 with `Retry-After`, separate read and write budgets, per-address isolation, that one address cannot stuff a track, that a client of a server that trusts no proxy cannot forge its address, and that the health check is exempt. The Docker smoke test checks the same through the real nginx: forged `X-Forwarded-For` values must not buy extra votes (nginx overwrites the header).
+**Rate limiting.** The ratings endpoints are limited per client address (`app/src/rateLimit.js`: 120 reads and 20 votes per minute, in memory) and `/api/presence` heartbeats to 30 a minute per address plus 6 a minute per listener id; `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RATE_LIMIT_PRESENCE`, `RATE_LIMIT_PRESENCE_LISTENER` and `RATE_LIMIT_WINDOW_MS` change them, `TRUST_PROXY` says which peers may set `X-Forwarded-For`). The security tests start two extra servers with tiny limits (ports 3102 and 3103, database `radiozk_test_security_rl`) and give each simulated client its own address through `X-Forwarded-For`; they check the 429 with `Retry-After`, separate read and write budgets, per-address isolation, that one address cannot stuff a track, that a client of a server that trusts no proxy cannot forge its address, and that the health check is exempt. The Docker smoke test checks the same through the real nginx: forged `X-Forwarded-For` values must not buy extra votes (nginx overwrites the header).
 
 **Known, accepted gap.** A vote is tied only to a random id the client chooses and to an IP address, so many distinct addresses can still inflate one track (distributed ballot stuffing). One test named `KNOWN GAP` pins that. If you add stronger protection (accounts, proof of work), that test will fail: change it to assert the new protection and remove the gap from this list.
 
@@ -163,5 +168,5 @@ Not covered by the test suites: TLS, which the Docker setup leaves to a proxy in
 
 - Safari/iOS native HLS playback is not tested; it needs a Mac or iPhone.
 - Audible output is not tested.
-- The `NowPlaying` and `RadioPlayer` components are covered only by the e2e script. The hooks `useRadioStream`, `useNowPlaying` and `useMediaSession` have unit tests with fakes, not a real stream.
+- The `NowPlaying` and `RadioPlayer` components and `RadioProvider` are covered only by the e2e script (`MiniPlayer` and `About` have component tests). The hooks `useRadioStream`, `useNowPlaying`, `useMediaSession` and `usePresence` have unit tests with fakes, not a real stream.
 - Rate limits are per address and in memory: they reset when the API restarts, and they do not stop an attacker who rotates addresses. Behind a second proxy (for example a TLS terminator in front of nginx) every client shares that proxy's address unless the proxy passes the real one on.

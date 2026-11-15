@@ -1,10 +1,11 @@
 import { rateLimit } from 'express-rate-limit';
 
-// Per-IP limits on the ratings endpoints, in memory (one API process; counters reset when it restarts).
+// Per-IP limits on the ratings and presence endpoints, in memory (one API process; counters reset when it restarts).
 // Defaults suit a human: the page reads the ratings once per track and a listener votes a few times a minute.
 //   RATE_LIMIT_READ        GETs per window per IP        (default 120)
 //   RATE_LIMIT_WRITE       POSTs per window per IP       (default 20)
 //   RATE_LIMIT_PRESENCE    heartbeats per window per IP  (default 30: about 15 listeners behind one address)
+//   RATE_LIMIT_PRESENCE_LISTENER  heartbeats per window per listener id (default 6; the id is client-chosen, so the per-IP limit is the real cap)
 //   RATE_LIMIT_WINDOW_MS   window length                 (default 60000)
 //   TRUST_PROXY            which peers may set X-Forwarded-For: an Express `trust proxy` value (default
 //                          'loopback, uniquelocal', i.e. nginx on this host or on the Docker network). Anything
@@ -32,4 +33,4 @@ export const readLimiter = () => limiter(int(process.env.RATE_LIMIT_READ, 120));
 export const writeLimiter = () => limiter(int(process.env.RATE_LIMIT_WRITE, 20));
 export const presenceLimiter = () => limiter(int(process.env.RATE_LIMIT_PRESENCE, 30));
 // Per listener id (a client-chosen header, so this only stops a buggy client; the per-IP limit is the real cap).
-export const presenceListenerLimiter = () => limiter(int(process.env.RATE_LIMIT_PRESENCE_LISTENER, 6), { keyGenerator: (req) => req.get('x-listener-id') });
+export const presenceListenerLimiter = () => limiter(int(process.env.RATE_LIMIT_PRESENCE_LISTENER, 6), { keyGenerator: (req) => req.listenerId });

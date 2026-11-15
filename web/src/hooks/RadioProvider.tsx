@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { useLocation } from 'react-router';
 import { useNowPlaying, type NowPlaying } from '../nowPlaying.ts';
 import { BASE_TITLE, setPlayingTitle } from '../pageTitle.ts';
-import { isPlayPauseKey, pageTitle } from '../playerUi.ts';
+import { isPlayPauseKey, pageTitle, splitTitle } from '../playerUi.ts';
 import { useMediaSession } from './useMediaSession.ts';
 import { usePresence } from './usePresence.ts';
 import { useRadioStream } from './useRadioStream.ts';
@@ -43,7 +43,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   }, [audioRef, volume]);
 
   useEffect(() => {
-    const t = pageTitle(BASE_TITLE, status === 'playing', track);
+    const t = pageTitle(BASE_TITLE, status === 'playing', track && { title: splitTitle(track.title).main });
     setPlayingTitle(t === BASE_TITLE ? null : t);
     return () => setPlayingTitle(null);
   }, [status, track]);

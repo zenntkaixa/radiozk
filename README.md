@@ -10,6 +10,8 @@ It is a development prototype, not a production service. Everything runs as the 
 - **Browser support**: Safari/iOS use native HLS; other browsers use [hls.js](https://github.com/video-dev/hls.js).
 - **Now playing**: current track, cover art, quality badge (bit depth / sample rate), recently played list, and Media Session integration (lock-screen / media-key metadata).
 - **Ratings**: thumbs up/down per track, stored in PostgreSQL. Listeners are anonymous (a random UUID kept in `localStorage`).
+- **Listening with you**: a live listener count kept in the API's memory (heartbeats while audio plays; shown from three listeners up), plus a YouTube search link on each recently played track.
+- **Frequency bars** while playing (not in Safari's native HLS), a **mini-player** that keeps the radio playing when you open another page, and **dark mode** that follows the system theme.
 
 ## Stack
 
@@ -152,10 +154,10 @@ Full details are in [README-TESTING.md](README-TESTING.md); in short:
 
 - `bin/test.sh` runs everything except the browser e2e test:
   - backend (`app/`): pure unit tests of the request validation, plus black-box API tests that spawn the real server on port 3100 against a throwaway `radiozk_test` database (PostgreSQL must be running);
-  - frontend (`web/`): metadata parser tests and Vitest + Testing Library tests of the rating UI (`RatingButtons`, `api.ts`, `listenerId.ts`).
+  - frontend (`web/`): metadata parser tests and Vitest + Testing Library tests of the UI (rating buttons, the player hooks, presence, the visualizer, the mini-player and the About page).
 - Each suite has its own script: `npm run test:unit` / `test:api` in `app/`, `npm run test:parser` / `test:ui` in `web/`.
 - GitHub Actions (`.github/workflows/ci.yml`) type-checks, builds and runs these suites on every push to `main` and `develop` and on pull requests, against a Postgres service container.
-- `npm run e2e` (in `web/`) drives headless Firefox through Playwright against <http://localhost:8080>: page render, FLAC and AAC playback, ratings, routing. It needs nginx, PostgreSQL and the API running, plus a current build in `www/`. It casts real votes, so clean up afterwards:
+- `npm run e2e` (in `web/`) drives headless Firefox through Playwright against <http://localhost:8080>: page render, FLAC and AAC playback, ratings, presence, the mini-player across pages, routing. It needs nginx, PostgreSQL and the API running, plus a current build in `www/`. It casts real votes, so clean up afterwards:
 
   ```sh
   bin/psql.sh -c 'truncate ratings'

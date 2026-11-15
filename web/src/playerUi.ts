@@ -29,3 +29,22 @@ export const searchUrl = (artist: string, title: string) =>
   `https://www.youtube.com/results?${new URLSearchParams({ search_query: `${artist} ${title}`.trim() })}`;
 
 export const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Brackets (and a trailing " - ...") that only say which release of the song this is. They move under the title as a
+// small label. Anything that changes what the song is (feat., live, remix, cover) stays in the title.
+const VERSION_WORDS = /\b(remaster(ed)?|version|mix|edit|bonus|soundtrack|mono|stereo|deluxe|expanded|reissue|anniversary|single|album)\b/i;
+const KEEP_WORDS = /\b(feat|featuring|ft|with|live|remix|vs|cover|acoustic|demo)\b\.?/i;
+const isVersionNote = (s: string) => VERSION_WORDS.test(s) && !KEEP_WORDS.test(s);
+
+/** Splits "Song (2015 Remaster)" into { main: "Song", extra: "2015 Remaster" }. Display only: ratings use the raw title. */
+export function splitTitle(title: string): { main: string; extra: string } {
+  let main = title;
+  const extras: string[] = [];
+  for (;;) {
+    const m = /\s*[([]([^()[\]]*)[)\]]\s*$/.exec(main) ?? /\s+-\s+([^-]+)$/.exec(main);
+    if (!m || !isVersionNote(m[1])) break;
+    extras.unshift(m[1].trim());
+    main = main.slice(0, m.index).trim();
+  }
+  return main ? { main, extra: extras.join(' · ') } : { main: title, extra: '' }; // never strip a title to nothing
+}
