@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getPresence, sendHeartbeat } from '../api.ts';
 
 export const PRESENCE_MS = 30_000;
@@ -10,6 +10,7 @@ export const PRESENCE_MS = 30_000;
  */
 export function usePresence(playing: boolean): number | null {
   const [listening, setListening] = useState<number | null>(null);
+  const lastBeat = useRef(0); // survives status flips, so Playing <-> Buffering can't re-send within 30 s
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -20,6 +21,7 @@ export function usePresence(playing: boolean): number | null {
       ctrl?.abort();
       ctrl = new AbortController();
       try {
+        if (playing) lastBeat.current = Date.now();
         const r = await (playing ? sendHeartbeat(ctrl.signal) : getPresence(ctrl.signal));
         setListening(r.listening);
       } catch (e) {
@@ -38,7 +40,10 @@ export function usePresence(playing: boolean): number | null {
       }
     };
 
-    void tick();
+    // First tick now, unless a heartbeat already went out in the last 30 s (the per-listener limit is 6 a minute)
+    const wait = playing ? Math.max(0, PRESENCE_MS - (Date.now() - lastBeat.current)) : 0;
+    if (wait === 0) void tick();
+    else timer = setTimeout(() => void tick(), wait);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       clearTimeout(timer);

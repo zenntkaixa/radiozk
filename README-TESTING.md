@@ -73,7 +73,7 @@ Tests the pure functions in `app/src/validate.js` with no server or database:
 
 ### Presence: `app/test/presence.test.js`
 
-The in-memory listener count: unit tests of the store with a fake clock (expiry, one count per id, the memory cap) and black-box tests of `/api/presence` on ports 3105 and 3106 (database `radiozk_test_presence`): counting, the 400 without a listener id, `no-store`, and the per-listener and per-IP heartbeat limits.
+The in-memory listener count: unit tests of the store with a fake clock (expiry, one count per id, the memory cap) and black-box tests of `/api/presence` on ports 3105 and 3106 (database `radiozk_test_presence`): counting (one listener however the id is cased), the 400 without a listener id, `no-store`, and the per-listener and per-IP heartbeat limits.
 
 ### Backend API: `app/test/ratings.test.js`
 

@@ -15,9 +15,10 @@ router.get('/', readLimiter(), (_req, res) => res.json({ listening: presence.cou
 // A playing client sends this every 30 s. Per IP (the real cap, the id is client-chosen) and per listener id.
 router.post('/', presenceLimiter(), (req, res, next) => {
   if (!isListenerId(req.get('x-listener-id'))) return res.status(400).json({ error: 'valid X-Listener-Id header required' });
+  req.listenerId = req.get('x-listener-id').toLowerCase(); // the id check ignores case; ABC... and abc... are one listener
   next();
 }, presenceListenerLimiter(), (req, res) => {
-  presence.beat(req.get('x-listener-id'));
+  presence.beat(req.listenerId);
   res.json({ listening: presence.count() });
 });
 

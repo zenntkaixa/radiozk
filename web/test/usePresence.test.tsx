@@ -43,6 +43,21 @@ describe('usePresence', () => {
     expect(methods(fetchMock)).toEqual(['GET']); // no more heartbeats
   });
 
+  it('does not send an extra heartbeat when the status flaps within 30 s', async () => {
+    const { rerender } = renderHook(({ playing }) => usePresence(playing), { initialProps: { playing: true } });
+    await act(async () => {});
+    for (let i = 0; i < 3; i++) {
+      await act(() => vi.advanceTimersByTimeAsync(2_000));
+      rerender({ playing: false });
+      await act(() => vi.advanceTimersByTimeAsync(1));
+      rerender({ playing: true });
+      await act(() => vi.advanceTimersByTimeAsync(1));
+    }
+    expect(methods(fetchMock).filter((m) => m === 'POST')).toEqual(['POST']); // still just the first one
+    await act(() => vi.advanceTimersByTimeAsync(PRESENCE_MS));
+    expect(methods(fetchMock).filter((m) => m === 'POST')).toHaveLength(2); // the next one is due 30 s after the first
+  });
+
   it('stops reading while the tab is hidden, but keeps sending heartbeats while playing', async () => {
     const reader = renderHook(() => usePresence(false));
     await act(async () => {});

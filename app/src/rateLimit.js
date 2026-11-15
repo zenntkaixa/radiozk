@@ -33,4 +33,4 @@ export const readLimiter = () => limiter(int(process.env.RATE_LIMIT_READ, 120));
 export const writeLimiter = () => limiter(int(process.env.RATE_LIMIT_WRITE, 20));
 export const presenceLimiter = () => limiter(int(process.env.RATE_LIMIT_PRESENCE, 30));
 // Per listener id (a client-chosen header, so this only stops a buggy client; the per-IP limit is the real cap).
-export const presenceListenerLimiter = () => limiter(int(process.env.RATE_LIMIT_PRESENCE_LISTENER, 6), { keyGenerator: (req) => req.get('x-listener-id') });
+export const presenceListenerLimiter = () => limiter(int(process.env.RATE_LIMIT_PRESENCE_LISTENER, 6), { keyGenerator: (req) => req.listenerId });
