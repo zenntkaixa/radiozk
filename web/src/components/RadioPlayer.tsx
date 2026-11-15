@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRadio } from '../hooks/RadioProvider.tsx';
 import { saveDataRequested } from '../idle.ts';
 import ShareButton from './ShareButton.tsx';
-import { MIN_LISTENERS_SHOWN, SLEEP_CHOICES, prefersReducedMotion, presenceLine } from '../playerUi.ts';
+import { SLEEP_CHOICES, prefersReducedMotion, presenceParts } from '../playerUi.ts';
 
 /** The player card of the Radio page. The audio itself lives in RadioProvider and keeps going when this unmounts. */
 export default function RadioPlayer() {
@@ -30,6 +30,7 @@ export default function RadioPlayer() {
     };
   }, [playing, mode, canvas, audioRef]);
 
+  const presence = presenceParts(listening, status !== 'idle');
   const label = { idle: 'Tap play to listen', buffering: 'Buffering…', playing: 'Live', paused: 'Paused', error: 'Error' }[status];
 
   if (mode === 'unsupported') {
@@ -70,9 +71,11 @@ export default function RadioPlayer() {
         <canvas ref={setCanvas} aria-hidden="true" className="h-12 min-w-0 flex-1" />
       </div>
 
-      {/* The thank-you only makes sense once they have tuned in; the count is worth showing at any time. */}
-      {(status !== 'idle' || (listening !== null && listening >= MIN_LISTENERS_SHOWN)) && (
-        <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{presenceLine(listening)}</p>
+      {/* Each piece stays whole when the line wraps on a phone; the thank-you waits for the first Play. */}
+      {presence.length > 0 && (
+        <p className="mt-4 flex flex-wrap gap-x-4 text-sm text-slate-600 dark:text-slate-400">
+          {presence.map((t) => <span key={t}>{t}</span>)}
+        </p>
       )}
 
       <div className="mt-4 flex items-center gap-3">

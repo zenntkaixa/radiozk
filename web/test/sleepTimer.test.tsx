@@ -94,5 +94,6 @@ describe('thank-you line', () => {
     listening = 5;
     show(<RadioPlayer />);
     expect(screen.getByText(/5 listening with you/)).toBeInTheDocument();
+    expect(screen.queryByText(/Arigatou/)).toBeNull(); // still before the first Play
   });
 });

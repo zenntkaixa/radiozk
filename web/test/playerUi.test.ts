@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MIN_LISTENERS_SHOWN, isPlayPauseKey, pageTitle, presenceLine, searchUrl, sleepGain, splitTitle } from '../src/playerUi.ts';
+import { MIN_LISTENERS_SHOWN, isPlayPauseKey, pageTitle, presenceParts, searchUrl, sleepGain, splitTitle } from '../src/playerUi.ts';
 
 const key = (target: Element | null, over: Partial<{ code: string; repeat: boolean; ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }> = {}) =>
   ({ code: 'Space', repeat: false, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, target, ...over });
@@ -40,12 +40,15 @@ describe('pageTitle', () => {
   });
 });
 
-describe('presenceLine', () => {
-  it('shows the count from the threshold up, and only the thank-you below it or while unknown', () => {
-    expect(presenceLine(MIN_LISTENERS_SHOWN)).toBe(`🎧 ${MIN_LISTENERS_SHOWN} listening with you right now · Arigatou for tuning in ✨`);
-    expect(presenceLine(MIN_LISTENERS_SHOWN - 1)).toBe('Arigatou for tuning in ✨');
-    expect(presenceLine(0)).toBe('Arigatou for tuning in ✨');
-    expect(presenceLine(null)).toBe('Arigatou for tuning in ✨');
+describe('presenceParts', () => {
+  const thanks = 'Arigatou for tuning in ✨';
+  it('shows the count from the threshold up, and the thank-you only once tuned in', () => {
+    expect(presenceParts(MIN_LISTENERS_SHOWN, true)).toEqual([`🎧 ${MIN_LISTENERS_SHOWN} listening with you right now`, thanks]);
+    expect(presenceParts(MIN_LISTENERS_SHOWN, false)).toEqual([`🎧 ${MIN_LISTENERS_SHOWN} listening with you right now`]);
+    expect(presenceParts(MIN_LISTENERS_SHOWN - 1, true)).toEqual([thanks]);
+    expect(presenceParts(0, true)).toEqual([thanks]);
+    expect(presenceParts(null, true)).toEqual([thanks]);
+    expect(presenceParts(null, false)).toEqual([]);
   });
 });
 
