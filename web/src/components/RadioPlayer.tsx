@@ -3,7 +3,8 @@ import type { NowPlaying } from '../nowPlaying.ts';
 import { useMediaSession } from '../hooks/useMediaSession.ts';
 import { useRadioStream } from '../hooks/useRadioStream.ts';
 import { usePresence } from '../hooks/usePresence.ts';
-import { isPlayPauseKey, pageTitle, presenceLine } from '../playerUi.ts';
+import { saveDataRequested } from '../idle.ts';
+import { isPlayPauseKey, pageTitle, prefersReducedMotion, presenceLine } from '../playerUi.ts';
 
 export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
   const { audioRef, audioProps, mode, quality, status, info, notice, togglePlay, changeQuality } = useRadioStream();
@@ -14,6 +15,27 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [audioRef, volume]);
+
+  // Frequency bars while playing through hls.js (not Safari's native HLS). The chunk loads on first play.
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const playing = status === 'playing';
+  useEffect(() => {
+    if (!playing || mode !== 'hls.js' || prefersReducedMotion() || saveDataRequested()) return;
+    let cancelled = false;
+    let stop: (() => void) | null = null;
+    import('../visualizer.ts')
+      .then(async ({ startVisualizer }) => {
+        if (!audioRef.current || !canvasRef.current || cancelled) return;
+        const s = await startVisualizer(audioRef.current, canvasRef.current);
+        if (cancelled) s?.();
+        else stop = s;
+      })
+      .catch(() => {}); // no visualizer is fine, the radio still plays
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [playing, mode, audioRef]);
 
   const baseTitle = useRef(document.title);
   useEffect(() => {
@@ -69,6 +91,7 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
             )}
           </p>
         </div>
+        <canvas ref={canvasRef} aria-hidden="true" className="h-12 min-w-0 flex-1" />
       </div>
 
       <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{presenceLine(listening)}</p>
