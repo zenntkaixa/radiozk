@@ -239,6 +239,12 @@ try {
   await page.goto(`${origin}/`);
   await page.getByRole('button', { name: 'Share' }).waitFor();
   check('Share button is on the Radio page', true);
+  const manifest = await page.request.get(`${origin}/manifest.webmanifest`);
+  const mj = manifest.ok() ? await manifest.json().catch(() => null) : null;
+  check('manifest is served as a manifest, with icons that load', /manifest\+json/.test(manifest.headers()['content-type'] ?? '') && mj?.display === 'standalone' && (await Promise.all((mj.icons ?? []).map((i) => page.request.get(`${origin}${i.src}`).then((r) => r.ok())))).every(Boolean), String(manifest.headers()['content-type']));
+  await page.getByRole('link', { name: "What's new" }).click();
+  check("What's new page lists releases", (await page.getByRole('heading', { level: 1, name: "What's new" }).waitFor({ timeout: 5000 }).then(() => true, () => false)) && (await page.getByRole('heading', { level: 2 }).count()) >= 1);
+  await page.goto(`${origin}/`);
 } catch (e) {
   check('test run completed without exception', false, e.message.split('\n')[0]);
   await page.screenshot({ path: `${shots}/error.png`, fullPage: true }).catch(() => {});

@@ -20,6 +20,13 @@ server {
 
     location = /favicon.ico { access_log off; return 204; }   # no .ico shipped; don't serve index.html as an icon
 
+    # The image's mime.types has no .webmanifest, so it would be served as octet-stream.
+    location = /manifest.webmanifest {
+        default_type application/manifest+json;
+        add_header Cache-Control "no-cache";
+        include /etc/nginx/security-headers.conf;
+    }
+
     location / {
         add_header Cache-Control "no-cache";
         include /etc/nginx/security-headers.conf;

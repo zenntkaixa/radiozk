@@ -40,7 +40,16 @@ describe('index.html', () => {
     const robots = readFileSync(web('public', 'robots.txt'), 'utf8');
     expect(robots).toContain(`Sitemap: ${site}sitemap.xml`);
     const locs = [...readFileSync(web('public', 'sitemap.xml'), 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-    expect(locs).toEqual([site, `${site}about`]);
+    expect(locs).toEqual([site, `${site}about`, `${site}whats-new`]);
+  });
+
+  it('links a web app manifest whose icons exist in public/', () => {
+    expect(links.some((l) => /rel="manifest"\s+href="\/manifest\.webmanifest"/.test(l))).toBe(true);
+    const m = JSON.parse(readFileSync(web('public', 'manifest.webmanifest'), 'utf8'));
+    expect(m.display).toBe('standalone');
+    expect(m.start_url).toBe('/');
+    expect(m.icons.map((i: { sizes: string }) => i.sizes)).toEqual(['192x192', '512x512']);
+    for (const i of m.icons) expect(() => readFileSync(web('public', i.src.replace(/^\//, '')))).not.toThrow();
   });
 
   it('starts the metadata request early, for the same URL as the poll in nowPlaying.ts', () => {
