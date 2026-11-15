@@ -1,0 +1,20 @@
+name: Feedback or idea
+description: Tell me what you like, or what you'd like to see next on radiozk.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Issues on GitHub are **public**, so please don't include personal details.
+  - type: textarea
+    id: feedback
+    attributes:
+      label: What would you like to tell me?
+      description: An idea, something you enjoyed, something that felt off.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser (optional)
+      placeholder: e.g. iPhone, Safari

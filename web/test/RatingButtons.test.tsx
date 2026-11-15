@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RatingButtons from '../src/components/RatingButtons.tsx';
 import * as api from '../src/api.ts';
-import { getLiked } from '../src/liked.ts';
+import { getLiked, setLiked } from '../src/liked.ts';
 
 vi.mock('../src/api.ts');
 const getRatings = vi.mocked(api.getRatings);
@@ -172,5 +172,27 @@ describe('RatingButtons', () => {
     await userEvent.click(up());
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
     expect(getLiked()).toEqual([]); // rolled back with the vote
+  });
+
+  it('asks for feedback once, after the third liked song, and not again', async () => {
+    setLiked('A', 'One', true);
+    const view = await renderLoaded({ up: 0, down: 0, mine: 0 }, { artist: 'A', title: 'Two' });
+    setRating.mockResolvedValue({ up: 1, down: 0, mine: 1 });
+    await userEvent.click(up()); // second liked song: too early
+    await waitFor(() => expect(getLiked()).toHaveLength(2));
+    expect(screen.queryByText(/Glad you like it/)).toBeNull();
+    view.unmount();
+
+    const third = await renderLoaded({ up: 0, down: 0, mine: 0 }, { artist: 'A', title: 'Three' });
+    await userEvent.click(up());
+    expect(await screen.findByRole('link', { name: 'Tell me on GitHub' })).toHaveAttribute('href', expect.stringContaining('github.com/zenntkaixa/radiozk/issues'));
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByText(/Glad you like it/)).toBeNull();
+    third.unmount();
+
+    await renderLoaded({ up: 0, down: 0, mine: 0 }, { artist: 'A', title: 'Four' });
+    await userEvent.click(up());
+    await waitFor(() => expect(getLiked()).toHaveLength(4));
+    expect(screen.queryByText(/Glad you like it/)).toBeNull(); // once ever
   });
 });
