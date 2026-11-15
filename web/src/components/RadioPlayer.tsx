@@ -4,6 +4,21 @@ import { saveDataRequested } from '../idle.ts';
 import ShareButton from './ShareButton.tsx';
 import { SLEEP_CHOICES, prefersReducedMotion, presenceParts } from '../playerUi.ts';
 
+/** Live "Stops in m:ss", hidden from screen readers (the per-minute status above speaks instead). */
+function Countdown({ at }: { at: number }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const s = Math.max(0, Math.ceil((at - now) / 1000));
+  return (
+    <span aria-hidden="true" className="tabular-nums text-slate-500 dark:text-slate-400">
+      Stops in {Math.floor(s / 60)}:{String(s % 60).padStart(2, '0')}
+    </span>
+  );
+}
+
 /** The player card of the Radio page. The audio itself lives in RadioProvider and keeps going when this unmounts. */
 export default function RadioPlayer() {
   const { audioRef, mode, quality, status, info, notice, togglePlay, changeQuality, listening, volume, setVolume, sleep, setSleep } = useRadio();
@@ -104,7 +119,12 @@ export default function RadioPlayer() {
             <option key={m} value={m}>{m} minutes</option>
           ))}
         </select>
-        {sleep && <span className="text-slate-500 dark:text-slate-400" role="status">Stops in {sleep.left} min</span>}
+        {sleep && (
+          <>
+            <span className="sr-only" role="status">Stops in {sleep.left} min</span>
+            <Countdown at={sleep.at} />
+          </>
+        )}
         <span className="sm:ml-auto"><ShareButton /></span>
       </div>
 

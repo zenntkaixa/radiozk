@@ -83,6 +83,14 @@ describe('sleep timer', () => {
     expect(screen.queryByText(/Stops in/)).toBeNull();
     expect(vol()).toBe(0.8);
   });
+
+  it('counts down in m:ss every second', async () => {
+    show(<RadioPlayer />);
+    await userEvent.selectOptions(screen.getByLabelText('Sleep timer'), '15');
+    expect(screen.getByText('Stops in 15:00')).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(61000));
+    expect(screen.getByText('Stops in 13:59')).toBeInTheDocument();
+  });
 });
 
 describe('thank-you line', () => {
