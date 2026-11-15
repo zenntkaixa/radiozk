@@ -161,7 +161,9 @@ try {
   check('vote persists after reload (same listener id)', persisted, tracksAtVote.join(' -> '));
   const likedTitles = () => page.evaluate(() => JSON.parse(localStorage.getItem('radiozk.liked') ?? '[]').map((s) => s.title));
   const votedTitle = tracksAtVote.at(-1);
-  check('a thumbs up is kept in the personal Liked list', (await likedTitles()).includes(votedTitle), String(await likedTitles()));
+  // The card shows the title without its version note; the saved copy keeps the raw title, hence startsWith.
+  const hasVoted = async () => (await likedTitles()).some((t) => t.startsWith(votedTitle));
+  check('a thumbs up is kept in the personal Liked list', await hasVoted(), String(await likedTitles()));
   await page.getByRole('link', { name: 'Liked', exact: true }).click();
   check('Liked page lists the song with a YouTube link', await page.getByRole('link', { name: new RegExp(votedTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).first().getAttribute('href').then((h) => h.startsWith('https://www.youtube.com/results?search_query='), () => false));
   await page.getByRole('link', { name: 'Radio', exact: true }).click();
@@ -170,7 +172,7 @@ try {
   await page.getByRole('button', { name: 'I like this track' }).click();
   await page.waitForFunction(() => document.querySelector('[aria-label="I like this track"]').getAttribute('aria-pressed') === 'false');
   check('tapping own vote clears it', true);
-  check('clearing the vote removes it from the Liked list', !(await likedTitles()).includes(votedTitle));
+  check('clearing the vote removes it from the Liked list', !(await hasVoted()));
   await page.getByLabel('Sleep timer').selectOption('15');
   check('sleep timer shows the time left', (await page.getByText('Stops in 15 min').count()) === 1);
   await page.getByLabel('Sleep timer').selectOption('0');
@@ -223,7 +225,7 @@ try {
   await page.goto(`${base}/about`);
   check('deep link /about works', await page.getByRole('heading', { name: 'About' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
   check('About sets the tab title', (await page.title()) === 'About · radiozk', await page.title());
-  check('About links out as buttons (GitHub, LinkedIn, Portfolio)', (await page.locator('a[target=_blank][href*="github.com/zenntkaixa"], a[target=_blank][href*="linkedin.com"], a[target=_blank][href*="zenntkaixa.dev"]').count()) === 3);
+  check('About links out as buttons (feedback on GitHub Issues, GitHub, LinkedIn, Portfolio)', (await page.locator('a[target=_blank][href*="github.com/zenntkaixa"], a[target=_blank][href*="linkedin.com"], a[target=_blank][href*="zenntkaixa.dev"]').count()) === 4 && (await page.getByRole('link', { name: 'Send feedback' }).getAttribute('href')).includes('/issues/new/choose'));
   await page.getByRole('link', { name: 'Back to the radio' }).click();
   check('"Back to the radio" returns to the player', await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
   check('the base tab title is back on the radio page', (await page.title()).startsWith('radiozk'), await page.title());

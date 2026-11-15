@@ -4,6 +4,14 @@ export type Release = { date: string; title: string; items: string[] };
 export const CHANGELOG: Release[] = [
   {
     date: '2026-11-15',
+    title: 'Tell me what you think',
+    items: [
+      'A "Send feedback" button on the About page opens GitHub, where you can share an idea or report a problem.',
+      'The web app can now be installed from your browser, and this What\'s new page is new too.',
+    ],
+  },
+  {
+    date: '2026-11-15',
     title: 'Sleep timer, liked songs and sharing',
     items: [
       'Sleep timer: stop after 15, 30 or 60 minutes, with a gentle fade-out.',

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getRatings, setRating, type RatingSummary } from '../api.ts';
+import { shouldAskFeedback, FEEDBACK_URL } from '../feedback.ts';
 import { setLiked } from '../liked.ts';
 import { applyVote } from '../rating.ts';
 
@@ -9,6 +10,7 @@ export default function RatingButtons({ artist, title }: { artist: string; title
   const [ratings, setRatings] = useState<RatingSummary | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [nudge, setNudge] = useState(false);
   const currentKey = useRef('');
   currentKey.current = `${artist}|${title}`;
 
@@ -16,6 +18,7 @@ export default function RatingButtons({ artist, title }: { artist: string; title
     let stale = false;
     setRatings(null);
     setFailed(false);
+    setNudge(false); // the ask belongs to the moment of the like, not to the next song
     getRatings(artist, title)
       .then((r) => !stale && setRatings(r))
       .catch(() => !stale && setFailed(true));
@@ -30,7 +33,8 @@ export default function RatingButtons({ artist, title }: { artist: string; title
     const before = ratings;
     const value = before.mine === v ? 0 : v; // tapping your current vote clears it
     setRatings(applyVote(before, value));
-    setLiked(artist, title, value === 1); // personal copy; a 👎 or a cleared vote removes it
+    const liked = setLiked(artist, title, value === 1); // personal copy; a 👎 or a cleared vote removes it
+    if (value === 1 && shouldAskFeedback(liked.length)) setNudge(true); // a quiet, one-time ask after a few likes
     setBusy(true);
     setFailed(false);
     try {
@@ -66,15 +70,29 @@ export default function RatingButtons({ artist, title }: { artist: string; title
   );
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-2">
-      <span className="shrink-0 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">Rate this track</span>
-      {button(1, 'I like this track', ratings?.up, '👍')}
-      {button(-1, "I don't like this track", ratings?.down, '👎')}
-      {failed && (
-        <span role="alert" className="text-xs text-amber-700 dark:text-amber-400">
-          Couldn't save your rating.
-        </span>
+    <>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="shrink-0 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">Rate this track</span>
+        {button(1, 'I like this track', ratings?.up, '👍')}
+        {button(-1, "I don't like this track", ratings?.down, '👎')}
+        {failed && (
+          <span role="alert" className="text-xs text-amber-700 dark:text-amber-400">
+            Couldn't save your rating.
+          </span>
+        )}
+      </div>
+      {nudge && (
+        <p role="status" className="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+          <span>
+            Glad you like it! Got an idea or a problem?{' '}
+            <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-indigo-600 underline dark:text-indigo-400">
+              Tell me on GitHub
+            </a>{' '}
+            (free account, public).
+          </span>
+          <button type="button" onClick={() => setNudge(false)} aria-label="Dismiss" className="min-h-11 min-w-11 shrink-0 rounded-full focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300">✕</button>
+        </p>
       )}
-    </div>
+    </>
   );
 }
