@@ -1,6 +1,7 @@
 import express from 'express';
 import { pool, migrate } from './db.js';
 import ratings from './routes/ratings.js';
+import presence from './routes/presence.js';
 import { trustProxySetting } from './rateLimit.js';
 
 const app = express();
@@ -13,6 +14,7 @@ app.get('/api/health', async (_req, res) => {
   res.json({ ok: true, ...rows[0] });
 });
 app.use('/api/ratings', ratings);
+app.use('/api/presence', presence);
 
 // Client errors raised by middleware (malformed JSON, body too large) keep their 4xx status; anything else is a
 // generic 500 so internals never reach the client.

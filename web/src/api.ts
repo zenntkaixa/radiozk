@@ -24,3 +24,13 @@ export const setRating = (artist: string, title: string, value: -1 | 0 | 1) =>
     headers: { 'content-type': 'application/json', 'x-listener-id': getListenerId() },
     body: JSON.stringify({ artist, title, value }),
   });
+
+export interface Presence {
+  listening: number;
+}
+
+export const getPresence = (signal?: AbortSignal) => request<Presence>('/api/presence', { signal });
+
+/** Tells the API this listener is playing right now; returns the new count. */
+export const sendHeartbeat = (signal?: AbortSignal) =>
+  request<Presence>('/api/presence', { method: 'POST', headers: { 'x-listener-id': getListenerId() }, signal });

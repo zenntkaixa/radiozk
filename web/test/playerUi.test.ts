@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPlayPauseKey, pageTitle } from '../src/playerUi.ts';
+import { MIN_LISTENERS_SHOWN, isPlayPauseKey, pageTitle, presenceLine, searchUrl } from '../src/playerUi.ts';
 
 const key = (target: Element | null, over: Partial<{ code: string; repeat: boolean; ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }> = {}) =>
   ({ code: 'Space', repeat: false, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, target, ...over });
@@ -37,5 +37,26 @@ describe('pageTitle', () => {
     expect(pageTitle('base', false, { title: 'Human' })).toBe('base');
     expect(pageTitle('base', true, null)).toBe('base');
     expect(pageTitle('base', true, { title: '' })).toBe('base');
+  });
+});
+
+describe('presenceLine', () => {
+  it('shows the count from the threshold up, and only the thank-you below it or while unknown', () => {
+    expect(presenceLine(MIN_LISTENERS_SHOWN)).toBe(`🎧 ${MIN_LISTENERS_SHOWN} listening with you right now · Arigatou for tuning in ✨`);
+    expect(presenceLine(MIN_LISTENERS_SHOWN - 1)).toBe('Arigatou for tuning in ✨');
+    expect(presenceLine(0)).toBe('Arigatou for tuning in ✨');
+    expect(presenceLine(null)).toBe('Arigatou for tuning in ✨');
+  });
+});
+
+describe('searchUrl', () => {
+  it('builds a YouTube search with the artist and title encoded', () => {
+    const url = new URL(searchUrl('Guns & Roses', 'Sweet Child o\' Mine'));
+    expect(url.origin + url.pathname).toBe('https://www.youtube.com/results');
+    expect(url.searchParams.get('search_query')).toBe("Guns & Roses Sweet Child o' Mine");
+  });
+
+  it('works without an artist', () => {
+    expect(new URL(searchUrl('', 'Song')).searchParams.get('search_query')).toBe('Song');
   });
 });
