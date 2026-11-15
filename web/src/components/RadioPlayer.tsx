@@ -66,20 +66,23 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
       <audio ref={audioRef} {...audioProps} />
 
       <div className="flex items-center gap-4">
-        <button
-          onClick={togglePlay}
-          aria-label={status === 'playing' || status === 'buffering' ? 'Pause' : 'Play'}
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300"
-        >
-          {status === 'playing' || status === 'buffering' ? (
-            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></svg>
-          ) : (
-            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-          )}
-        </button>
+        <div className="relative shrink-0">
+          {playing && <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full bg-indigo-500/50 motion-safe:animate-ring" />}
+          <button
+            onClick={togglePlay}
+            aria-label={status === 'playing' || status === 'buffering' ? 'Pause' : 'Play'}
+            className="relative flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 hover:bg-indigo-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300"
+          >
+            {status === 'playing' || status === 'buffering' ? (
+              <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+            )}
+          </button>
+        </div>
         <div>
           <p className="text-lg font-semibold">radiozk live</p>
-          <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400" role="status">
+          <p className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300" role="status">
             <span className={`h-2 w-2 rounded-full ${status === 'playing' ? 'animate-pulse bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
             {label}
             {info && <span className="text-slate-500 dark:text-slate-400">·</span>}
