@@ -87,7 +87,7 @@ Environment overrides:
 
 ### Bundle size budget: `web/scripts/check-size.mjs`
 
-After a build (`bin/build.sh`), `cd web && npm run size` checks gzip sizes (level 6, as nginx sends them) in `www/`: everything `index.html` loads up front must stay under `initialKb` (95 KB; about 88 KB when set), each other JS chunk under `lazyChunkKb` (120 KB; `hls.light` is about 110 KB), and the initial files must not contain hls.js at all. CI runs it right after the build. Raise a limit in `BUDGET` deliberately, in the PR that needs it. `test/checkSize.test.mjs` runs the check on small fake builds.
+After a build (`bin/build.sh`), `cd web && npm run size` checks gzip sizes (level 6, as nginx sends them) in `www/`: everything `index.html` loads up front must stay under `initialKb` (95 KB; the build prints the current total, which has grown with each feature, so check headroom before adding code), each other JS chunk under `lazyChunkKb` (120 KB; `hls.light` is about 110 KB), and the initial files must not contain hls.js at all. CI runs it right after the build. Raise a limit in `BUDGET` deliberately, in the PR that needs it. `test/checkSize.test.mjs` runs the check on small fake builds.
 
 `cd web && npm run perf [url]` (`scripts/perf.mjs`) measures a cold and a warm page load in headless Firefox: request timeline, FCP, LCP, transferred bytes. It is a manual tool, not a test: timings depend on the CDN that serves the cover, so compare several runs. Point it at a build that is being served (default http://localhost:8080/).
 
@@ -108,6 +108,9 @@ Vitest with jsdom; configuration is in `web/vitest.config.ts` and shared setup i
 - `visualizer.test.ts`: the bar levels, and `ensureGraph` building the audio graph only once the `AudioContext` is running, wrapping an element once and resuming a suspended context.
 - `usePresence.test.tsx`: heartbeats every 30 s only while playing, read-only polling otherwise (paused while the tab is hidden), and keeping the last count on failure.
 - `MiniPlayer.test.tsx`: the sticky bar shows on other pages once the radio has started, not on the Radio page, and drives playback; it shows a small cover, the title without its version note, and wraps long titles to two lines.
+- `liked.test.ts` and `Liked.test.tsx`: the device-only list (newest first, no duplicates, 200 cap, corrupt storage ignored) and its page (empty state, YouTube link, remove). `RatingButtons.test.tsx` also checks that 👍 adds, 👎 removes and a failed save rolls back.
+- `sleepTimer.test.tsx`: the provider's sleep timer under fake timers (full volume, fade, one pause, volume restored, no toggle of an already paused stream, picking and cancelling in the card) and the thank-you line waiting for the first Play.
+- `ShareButton.test.tsx`: the share sheet gets the site link; a closed sheet is silent; a failed or missing share copies the link; if copying fails the link is shown. `indexHtml.test.ts` also checks `robots.txt` and `sitemap.xml`.
 - `About.test.tsx`: the heading rules the e2e depends on, the cards, the link buttons and the tab title.
 - `useRadioStream.test.tsx`: the playback hook with a fake `hls.js/light` and a controllable idle scheduler: nothing is loaded until idle, never in native mode, Save-Data and load failures (with retry), unmount while loading, Play before and after the player exists (including pressing it twice), FLAC pinning with the AAC fallback notice, and quality switches while paused, playing and mid-start. The fake is registered per test with `vi.doMock`, because Vitest caches a `vi.mock` factory's result across `resetModules()`.
 - `idle.test.ts`: `whenIdle` (delay, idle callback, waiting for images with a cap, cancelling) and `saveDataRequested`.

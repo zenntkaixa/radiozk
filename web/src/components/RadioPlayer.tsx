@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useRadio } from '../hooks/RadioProvider.tsx';
 import { saveDataRequested } from '../idle.ts';
-import { prefersReducedMotion, presenceLine } from '../playerUi.ts';
+import ShareButton from './ShareButton.tsx';
+import { MIN_LISTENERS_SHOWN, SLEEP_CHOICES, prefersReducedMotion, presenceLine } from '../playerUi.ts';
 
 /** The player card of the Radio page. The audio itself lives in RadioProvider and keeps going when this unmounts. */
 export default function RadioPlayer() {
-  const { audioRef, mode, quality, status, info, notice, togglePlay, changeQuality, listening, volume, setVolume } = useRadio();
+  const { audioRef, mode, quality, status, info, notice, togglePlay, changeQuality, listening, volume, setVolume, sleep, setSleep } = useRadio();
 
   // Frequency bars while playing through hls.js (not Safari's native HLS). The chunk loads on first play. The canvas
   // is state, not a ref, so coming back to this page while playing starts the bars again.
@@ -69,7 +70,10 @@ export default function RadioPlayer() {
         <canvas ref={setCanvas} aria-hidden="true" className="h-12 min-w-0 flex-1" />
       </div>
 
-      <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{presenceLine(listening)}</p>
+      {/* The thank-you only makes sense once they have tuned in; the count is worth showing at any time. */}
+      {(status !== 'idle' || (listening !== null && listening >= MIN_LISTENERS_SHOWN)) && (
+        <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">{presenceLine(listening)}</p>
+      )}
 
       <div className="mt-4 flex items-center gap-3">
         <label htmlFor="vol" className="text-sm text-slate-600 dark:text-slate-400">Volume</label>
@@ -83,6 +87,23 @@ export default function RadioPlayer() {
           onChange={(e) => setVolume(Number(e.target.value))}
           className="flex-1 rounded accent-indigo-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300"
         />
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+        <label htmlFor="sleep" className="text-slate-600 dark:text-slate-400">Sleep timer</label>
+        <select
+          id="sleep"
+          value={sleep?.minutes ?? 0}
+          onChange={(e) => setSleep(Number(e.target.value) || null)}
+          className="min-h-11 rounded-lg border border-slate-300 bg-white px-2 dark:border-slate-600 dark:bg-slate-900"
+        >
+          <option value={0}>Off</option>
+          {SLEEP_CHOICES.map((m) => (
+            <option key={m} value={m}>{m} minutes</option>
+          ))}
+        </select>
+        {sleep && <span className="text-slate-500 dark:text-slate-400" role="status">Stops in {sleep.left} min</span>}
+        <span className="sm:ml-auto"><ShareButton /></span>
       </div>
 
       {mode === 'hls.js' && (
