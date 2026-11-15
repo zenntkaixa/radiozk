@@ -28,6 +28,7 @@ Shell state does not persist between tool calls, so source it in the same comman
 | Production build into `www/` | `bin/build.sh` (`npm run build` = `tsc && vite build`) |
 | Type check only | `cd web && npm run typecheck` |
 | SQL shell | `bin/psql.sh` (e.g. `bin/psql.sh -c '\dt'`) |
+| Dump a database to `dev/backups/` (git-ignored) | `bin/backup.sh` / `make backup`: the user supplies `BACKUP_DATABASE_URL` (the Neon string) or pastes it at a hidden prompt; agents never have it and never run it against Neon. Verified against a local throwaway database (dump, restore, row counts, failure leaves no file); no automated test. |
 
 There is no linter. Checks available:
 
