@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import { FEEDBACK_URL } from '../feedback.ts';
 import { useDocumentTitle } from '../pageTitle.ts';
 
 const link = 'font-medium text-indigo-600 dark:text-indigo-400 underline underline-offset-2 hover:text-indigo-800 dark:hover:text-indigo-300';
@@ -65,10 +66,11 @@ export default function About() {
 
         <Card icon="👋" title="Say hi">
           <p>
-            If you like it, tell me: rate a few songs, send it to a friend, or get in touch. I'm always happy to swap notes with
+            If you like it, tell me: rate a few songs, send it to a friend, or share an idea (feedback is public on GitHub and needs a free account). I'm always happy to swap notes with
             people learning to build things.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
+            <a className={button} href={FEEDBACK_URL} {...external}>Send feedback</a>
             <a className={button} href="https://github.com/zenntkaixa/radiozk" {...external}>GitHub</a>
             <a className={button} href="https://www.linkedin.com/in/mohamad-izzat-fahmi-bin-suhaimi-00b047145/" {...external}>LinkedIn</a>
             <a className={button} href="https://zenntkaixa.dev/" {...external}>Portfolio</a>

@@ -1,0 +1,20 @@
+name: Something is broken
+description: The radio won't play, a button doesn't work, something looks wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Issues on GitHub are **public**, so please don't include personal details.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what you saw instead.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. Android, Chrome
