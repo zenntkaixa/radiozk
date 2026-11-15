@@ -1,10 +1,11 @@
 import { rateLimit } from 'express-rate-limit';
 
-// Per-IP limits on the ratings endpoints, in memory (one API process; counters reset when it restarts).
+// Per-IP limits on the ratings and presence endpoints, in memory (one API process; counters reset when it restarts).
 // Defaults suit a human: the page reads the ratings once per track and a listener votes a few times a minute.
 //   RATE_LIMIT_READ        GETs per window per IP        (default 120)
 //   RATE_LIMIT_WRITE       POSTs per window per IP       (default 20)
 //   RATE_LIMIT_PRESENCE    heartbeats per window per IP  (default 30: about 15 listeners behind one address)
+//   RATE_LIMIT_PRESENCE_LISTENER  heartbeats per window per listener id (default 6; the id is client-chosen, so the per-IP limit is the real cap)
 //   RATE_LIMIT_WINDOW_MS   window length                 (default 60000)
 //   TRUST_PROXY            which peers may set X-Forwarded-For: an Express `trust proxy` value (default
 //                          'loopback, uniquelocal', i.e. nginx on this host or on the Docker network). Anything
