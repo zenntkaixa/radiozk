@@ -48,3 +48,8 @@ export function splitTitle(title: string): { main: string; extra: string } {
   }
   return main ? { main, extra: extras.join(' · ') } : { main: title, extra: '' }; // never strip a title to nothing
 }
+
+/** Sleep timer: how loud to be (0..1 of the chosen volume) with this long left; full volume until the last fade. */
+export const SLEEP_FADE_MS = 5000;
+export const sleepGain = (remainingMs: number) => Math.min(1, Math.max(0, remainingMs / SLEEP_FADE_MS));
+export const SLEEP_CHOICES = [15, 30, 60] as const;

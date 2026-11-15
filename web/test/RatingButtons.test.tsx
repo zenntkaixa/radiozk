@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RatingButtons from '../src/components/RatingButtons.tsx';
 import * as api from '../src/api.ts';
+import { getLiked } from '../src/liked.ts';
 
 vi.mock('../src/api.ts');
 const getRatings = vi.mocked(api.getRatings);
@@ -28,7 +29,10 @@ async function renderLoaded(initial: Summary, track = { artist: 'A', title: 'T' 
   return view;
 }
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  localStorage.clear();
+});
 
 describe('RatingButtons', () => {
   it('shows placeholders and disabled buttons until the counts load', async () => {
@@ -154,5 +158,19 @@ describe('RatingButtons', () => {
     slow.resolve({ up: 55, down: 0, mine: 0 });
     await new Promise((r) => setTimeout(r, 0));
     expect(up()).toHaveTextContent('7');
+  });
+
+  it('keeps a personal copy of liked songs, drops it on a dislike or a failed save', async () => {
+    await renderLoaded({ up: 0, down: 0, mine: 0 }, { artist: 'Queen', title: 'Radio Ga Ga' });
+    setRating.mockResolvedValueOnce({ up: 1, down: 0, mine: 1 });
+    await userEvent.click(up());
+    await waitFor(() => expect(getLiked().map((s) => s.title)).toEqual(['Radio Ga Ga']));
+    setRating.mockResolvedValueOnce({ up: 0, down: 1, mine: -1 });
+    await userEvent.click(down());
+    await waitFor(() => expect(getLiked()).toEqual([]));
+    setRating.mockRejectedValueOnce(new Error('offline'));
+    await userEvent.click(up());
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(getLiked()).toEqual([]); // rolled back with the vote
   });
 });

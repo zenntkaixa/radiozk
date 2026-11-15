@@ -159,9 +159,21 @@ try {
     await Promise.all([page.waitForResponse((r) => r.url().includes('/api/ratings') && r.request().method() === 'POST'), now.getByRole('button', { name: 'I like this track' }).click()]);
   }
   check('vote persists after reload (same listener id)', persisted, tracksAtVote.join(' -> '));
+  const likedTitles = () => page.evaluate(() => JSON.parse(localStorage.getItem('radiozk.liked') ?? '[]').map((s) => s.title));
+  const votedTitle = tracksAtVote.at(-1);
+  check('a thumbs up is kept in the personal Liked list', (await likedTitles()).includes(votedTitle), String(await likedTitles()));
+  await page.getByRole('link', { name: 'Liked', exact: true }).click();
+  check('Liked page lists the song with a YouTube link', await page.getByRole('link', { name: new RegExp(votedTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).first().getAttribute('href').then((h) => h.startsWith('https://www.youtube.com/results?search_query='), () => false));
+  await page.getByRole('link', { name: 'Radio', exact: true }).click();
+  await now.getByRole('button', { name: 'I like this track' }).waitFor();
+  await page.waitForFunction(() => !document.querySelector('[aria-label="I like this track"]').disabled, null, { timeout: 5000 });
   await page.getByRole('button', { name: 'I like this track' }).click();
   await page.waitForFunction(() => document.querySelector('[aria-label="I like this track"]').getAttribute('aria-pressed') === 'false');
   check('tapping own vote clears it', true);
+  check('clearing the vote removes it from the Liked list', !(await likedTitles()).includes(votedTitle));
+  await page.getByLabel('Sleep timer').selectOption('15');
+  check('sleep timer shows the time left', (await page.getByText('Stops in 15 min').count()) === 1);
+  await page.getByLabel('Sleep timer').selectOption('0');
   await page.screenshot({ path: `${shots}/3-rated.png`, fullPage: true });
 
   // --- first Play, both ways: the player library is loaded in the background ~2s after the page settles ---
