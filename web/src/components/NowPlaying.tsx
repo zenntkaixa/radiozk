@@ -38,7 +38,16 @@ export default function NowPlaying({ data, error }: { data: NowPlayingData | nul
   const subtitle = [data.album, data.year].filter(Boolean).join(' · ');
 
   return (
-    <section className="border-t border-slate-100 dark:border-slate-800 p-6" aria-label="Now playing">
+    <section className="relative isolate overflow-hidden border-t border-slate-100 dark:border-slate-800 p-6" aria-label="Now playing">
+      {/* The cover again, blurred, as a soft backdrop. Same URL, so no extra download; decorative. */}
+      {failedCover !== data.coverUrl && (
+        <img
+          src={data.coverUrl}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-10 -z-10 h-[calc(100%+5rem)] w-[calc(100%+5rem)] object-cover opacity-30 blur-3xl dark:opacity-25"
+        />
+      )}
       <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Now playing</h2>
       <div className="mt-3 flex gap-4">
         {failedCover === data.coverUrl ? (

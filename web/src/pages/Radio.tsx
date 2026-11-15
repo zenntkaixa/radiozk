@@ -1,15 +1,15 @@
 import RadioPlayer from '../components/RadioPlayer.tsx';
 import NowPlaying from '../components/NowPlaying.tsx';
-import { useNowPlaying } from '../nowPlaying.ts';
+import { useRadio } from '../hooks/RadioProvider.tsx';
 
 export default function Radio() {
-  const { data, error } = useNowPlaying();
+  const { track, trackError } = useRadio();
   return (
     <>
       <h1 className="mb-4 text-2xl font-bold">Listen live</h1>
       <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-        <RadioPlayer track={data} />
-        <NowPlaying data={data} error={error} />
+        <RadioPlayer />
+        <NowPlaying data={track} error={trackError} />
       </div>
       <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
         Music from{' '}

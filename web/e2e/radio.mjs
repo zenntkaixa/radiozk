@@ -63,10 +63,11 @@ try {
   check('now playing shows a track', !!title && title !== 'Unknown title', title ?? 'none');
   check('quality badge shown', (await now.getByText(/\d+-bit \/ [\d.]+ kHz/).count()) === 1);
   const coverOk = await now
-    .locator('img')
+    .locator('img:not([aria-hidden])') // the blurred backdrop copy is aria-hidden
     .evaluate((i) => (i.complete && i.naturalWidth > 0 ? true : new Promise((res) => { i.onload = () => res(true); i.onerror = () => res(false); setTimeout(() => res(false), 10000); })))
     .catch(() => false);
   check('cover image loaded', coverOk);
+  check('recently played titles link to a YouTube search', ((await now.locator('ol li a').first().getAttribute('href').catch(() => '')) ?? '').startsWith('https://www.youtube.com/results?search_query='));
   check('recently played lists tracks', (await now.locator('ol li').count()) >= 1, `${await now.locator('ol li').count()} items`);
   await page.screenshot({ path: `${shots}/1-loaded.png`, fullPage: true });
 
@@ -89,6 +90,9 @@ try {
   check('audio plays (advances 5s of media within 25s)', m.advanced >= 5 && !m.paused && !m.err, `advanced ${m.advanced.toFixed(1)}s in ${m.wall.toFixed(1)}s, err=${m.err}`);
   check('status says Live', /Live/.test(statusText ?? ''), statusText);
   check('lossless FLAC selected', /FLAC/.test(statusText ?? '') && /lossless/.test(statusText ?? ''), statusText);
+  check('visualizer draws bars while playing (the audio is not muted by it)', await page.waitForFunction(() => { const c = document.querySelector('canvas'); return c && c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v > 0); }, null, { timeout: 10000 }).then(() => true, () => false) && !m.paused);
+  check('the heartbeat counts this listener in /api/presence', await page.waitForFunction(() => fetch('/api/presence').then((r) => r.json()).then((j) => j.listening >= 1), null, { timeout: 10000 }).then(() => true, () => false));
+  check('player shows the thank-you line', (await page.getByText('Arigatou for tuning in').count()) === 1);
   await page.screenshot({ path: `${shots}/2-playing.png`, fullPage: true });
 
   // --- tab title and the Space key ---
@@ -183,9 +187,35 @@ try {
     await fresh.close();
   }
 
+  // --- the radio keeps playing across pages (the player lives above the routes) ---
+  await page.goto(`${base}/`);
+  await page.getByRole('button', { name: 'Play' }).click();
+  await page.waitForFunction(() => { const a = document.querySelector('audio'); return a && !a.paused && a.readyState >= 3; }, null, { timeout: 40000 }).catch(() => {});
+  await page.waitForTimeout(2000);
+  check('no mini-player on the Radio page (the full player is there)', (await page.getByRole('complementary', { name: 'Mini player' }).count()) === 0);
+  await page.getByRole('link', { name: 'About', exact: true }).click();
+  await page.getByRole('heading', { name: 'About' }).waitFor({ timeout: 10000 });
+  const kept = await mediaAdvance(page, 3, 20000);
+  check('music keeps playing after navigating to About', kept.advanced >= 3 && !kept.paused && !kept.err, `advanced ${kept.advanced.toFixed(1)}s in ${kept.wall.toFixed(1)}s`);
+  const mini = page.getByRole('complementary', { name: 'Mini player' });
+  check('mini-player shows on About while playing', await mini.isVisible() && (await mini.getByRole('button', { name: 'Pause' }).count()) === 1);
+  check('tab title shows the track on About while playing', !/^About/.test(await page.title()) && /· radiozk$/.test(await page.title()), await page.title());
+  await mini.getByRole('button', { name: 'Pause' }).click();
+  check('the mini-player pauses the audio', await page.waitForFunction(() => document.querySelector('audio').paused, null, { timeout: 5000 }).then(() => true, () => false));
+  check('tab title goes back to About once paused', (await page.title()) === 'About · radiozk', await page.title());
+  await mini.getByRole('link', { name: 'Open player' }).click();
+  await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 });
+  check('the player card shows the paused state and the mini-player is gone', /Paused/.test((await status.textContent()) ?? '') && (await page.getByRole('complementary', { name: 'Mini player' }).count()) === 0, (await status.textContent())?.trim());
+
   // --- routing / deep links ---
   await page.goto(`${base}/about`);
   check('deep link /about works', await page.getByRole('heading', { name: 'About' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
+  check('About sets the tab title', (await page.title()) === 'About · radiozk', await page.title());
+  check('About links out as buttons (GitHub, LinkedIn, Portfolio)', (await page.locator('a[target=_blank][href*="github.com/zenntkaixa"], a[target=_blank][href*="linkedin.com"], a[target=_blank][href*="zenntkaixa.dev"]').count()) === 3);
+  await page.getByRole('link', { name: 'Back to the radio' }).click();
+  check('"Back to the radio" returns to the player', await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
+  check('the base tab title is back on the radio page', (await page.title()).startsWith('radiozk'), await page.title());
+  await page.getByRole('link', { name: 'About', exact: true }).click();
   await page.getByRole('link', { name: 'Radio', exact: true }).click();
   check('client-side nav to Radio', await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
   await page.goto(`${base}/nope`);
