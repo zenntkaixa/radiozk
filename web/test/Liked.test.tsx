@@ -24,4 +24,15 @@ describe('Liked page', () => {
     expect(screen.queryByText('Heroes')).toBeNull();
     expect(getLiked().map((s) => s.title)).toEqual(['Radio Ga Ga']);
   });
+
+  it('shows when each song was liked, with the year only when it is not this year', () => {
+    setLiked('Queen', 'Radio Ga Ga', true, new Date(2020, 5, 15, 12).getTime());
+    setLiked('Bowie', 'Heroes', true, Date.now());
+    show();
+    const times = document.querySelectorAll('time');
+    expect(times).toHaveLength(2);
+    expect(times[0].getAttribute('datetime')).toMatch(/^\d{4}-\d\d-\d\dT/);
+    expect(times[0].textContent).not.toContain(String(new Date().getFullYear()));
+    expect(times[1].textContent).toContain('2020');
+  });
 });

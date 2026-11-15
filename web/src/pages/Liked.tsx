@@ -4,6 +4,12 @@ import { getLiked, setLiked } from '../liked.ts';
 import { useDocumentTitle } from '../pageTitle.ts';
 import { searchUrl } from '../playerUi.ts';
 
+/** "15 Nov", with the year when it is not this year. */
+const likedOn = (t: number) => {
+  const d = new Date(t);
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: 'numeric' }) });
+};
+
 export default function Liked() {
   useDocumentTitle('Liked · radiozk');
   const [songs, setSongs] = useState(getLiked);
@@ -29,7 +35,9 @@ export default function Liked() {
                 className="flex min-h-11 min-w-0 flex-1 flex-col justify-center"
               >
                 <span className="truncate font-medium underline decoration-slate-300 underline-offset-2 dark:decoration-slate-600">{s.title}</span>
-                {s.artist && <span className="truncate text-sm text-slate-500 dark:text-slate-400">{s.artist}</span>}
+                <span className="truncate text-sm text-slate-500 dark:text-slate-400">
+                  {s.artist && `${s.artist} · `}liked <time dateTime={new Date(s.likedAt).toISOString()}>{likedOn(s.likedAt)}</time>
+                </span>
               </a>
               <button
                 type="button"

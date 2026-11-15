@@ -19,4 +19,11 @@ describe("What's new", () => {
     expect(new Set(CHANGELOG.map((r) => r.title)).size).toBe(CHANGELOG.length); // titles are React keys
     for (const r of CHANGELOG) expect(r.items.length).toBeGreaterThan(0);
   });
+
+  it('goes back to the radio with the same button as the other pages', () => {
+    render(<MemoryRouter><WhatsNew /></MemoryRouter>);
+    const back = screen.getByRole('link', { name: /Back to the radio/ });
+    expect(back).toHaveAttribute('href', '/');
+    expect(back.className).toContain('bg-indigo-600');
+  });
 });
