@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { NowPlaying } from '../nowPlaying.ts';
 import { useMediaSession } from '../hooks/useMediaSession.ts';
 import { useRadioStream } from '../hooks/useRadioStream.ts';
+import { isPlayPauseKey, pageTitle } from '../playerUi.ts';
 
 export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
   const { audioRef, audioProps, mode, quality, status, info, notice, togglePlay, changeQuality } = useRadioStream();
@@ -12,14 +13,32 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [audioRef, volume]);
 
-  const label = { idle: 'Ready', buffering: 'Buffering…', playing: 'Live', paused: 'Paused', error: 'Error' }[status];
+  const baseTitle = useRef(document.title);
+  useEffect(() => {
+    document.title = pageTitle(baseTitle.current, status === 'playing', track);
+    return () => {
+      document.title = baseTitle.current;
+    };
+  }, [status, track]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isPlayPauseKey(e)) return;
+      e.preventDefault(); // otherwise Space scrolls the page
+      togglePlay();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [togglePlay]);
+
+  const label = { idle: 'Tap play to listen', buffering: 'Buffering…', playing: 'Live', paused: 'Paused', error: 'Error' }[status];
 
   if (mode === 'unsupported') {
     return <p className="text-red-700">This browser can't play HLS streams.</p>;
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="p-6">
       <audio ref={audioRef} {...audioProps} />
 
       <div className="flex items-center gap-4">
@@ -39,7 +58,7 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
           <p className="flex items-center gap-2 text-sm text-slate-600" role="status">
             <span className={`h-2 w-2 rounded-full ${status === 'playing' ? 'animate-pulse bg-red-500' : 'bg-slate-300'}`} />
             {label}
-            {info && <span className="text-slate-400">·</span>}
+            {info && <span className="text-slate-500">·</span>}
             {info && (
               <span className={info.lossless ? 'font-medium text-indigo-600' : ''}>
                 {info.codec}
@@ -60,7 +79,7 @@ export default function RadioPlayer({ track }: { track?: NowPlaying | null }) {
           step={0.01}
           value={volume}
           onChange={(e) => setVolume(Number(e.target.value))}
-          className="flex-1 accent-indigo-600"
+          className="flex-1 rounded accent-indigo-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300"
         />
       </div>
 
