@@ -32,11 +32,7 @@ export default function About() {
       <div className="space-y-4">
         <Card icon="📻" title="The story">
           <p>
-            radiozk started as a side project while I was learning to build software with{' '}
-            <a className={link} href="https://www.udemy.com/course/anthropic-claude-code/?couponCode=KEEPLEARNING" {...external}>
-              a Udemy course on Claude Code
-            </a>
-            . I wanted something real to practise on, so I built a radio player that sounds good, and it has been a big part of my
+            radiozk started as a side project while I was learning to build software with a Udemy course on Claude Code. I wanted something real to practise on, so I built a radio player that sounds good, and it has been a big part of my
             journey as a developer. "zk" is short for zenntkaixa, my name online.
           </p>
         </Card>
