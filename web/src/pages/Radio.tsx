@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import RadioPlayer from '../components/RadioPlayer.tsx';
 import NowPlaying from '../components/NowPlaying.tsx';
+import WhyLossless from '../components/WhyLossless.tsx';
 import { useRadio } from '../hooks/RadioProvider.tsx';
 
 export default function Radio() {
@@ -12,6 +13,7 @@ export default function Radio() {
         <RadioPlayer />
         <NowPlaying data={track} error={trackError} />
       </div>
+      <WhyLossless />
       <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
         Music from{' '}
         <a className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200" href="https://www.radio-calico.com/" target="_blank" rel="noopener noreferrer">
