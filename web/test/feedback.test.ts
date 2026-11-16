@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FEEDBACK_URL, shouldAskFeedback } from '../src/feedback.ts';
+import { FEEDBACK_URL, FORM_URL, shouldAskFeedback } from '../src/feedback.ts';
 
 beforeEach(() => localStorage.clear());
 
@@ -21,6 +21,12 @@ describe('feedback ask', () => {
     } finally {
       Storage.prototype.setItem = real;
     }
+  });
+});
+
+describe('feedback form link', () => {
+  it('is a Google Forms short link, opened in a new tab', () => {
+    expect(FORM_URL).toMatch(/^https:\/\/forms\.gle\/[A-Za-z0-9]+$/);
   });
 });
 
