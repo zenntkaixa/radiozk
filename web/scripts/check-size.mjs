@@ -8,8 +8,9 @@ import { gzipSync } from 'node:zlib';
 
 const KB = 1024;
 // Measured when set: initial ~86 KB JS + ~4 KB CSS, hls.light ~114 KB. Raise a limit deliberately, in the PR that needs it.
+// Raised 95 -> 100 on 2026-11-16 (the app was at 94.6 KB: About, Radio and the player are in the main bundle).
 export const BUDGET = {
-  initialKb: 95, // everything index.html loads up front (JS + CSS)
+  initialKb: 100, // everything index.html loads up front (JS + CSS)
   lazyChunkKb: 120, // each other JS chunk (hls.js/light is loaded on demand)
 };
 // A string only hls.js contains: finding it in the initial bundle means the player library is back on the critical path.
