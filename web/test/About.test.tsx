@@ -14,7 +14,7 @@ describe('About', () => {
 
   it('gives each section its own card heading', () => {
     setup();
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['📻The story', "🎧What you're hearing", '🛠️Under the hood', '👋Say hi']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['📻The story', "🎧What you're hearing", "🔒What's stored", '🛠️Under the hood', '👋Say hi']);
   });
 
   it('shows the stack as pills', () => {
