@@ -225,7 +225,7 @@ try {
   await page.goto(`${base}/about`);
   check('deep link /about works', await page.getByRole('heading', { name: 'About' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
   check('About sets the tab title', (await page.title()) === 'About · radiozk', await page.title());
-  check('About links out as buttons (feedback on GitHub Issues, GitHub, LinkedIn, Portfolio)', (await page.locator('a[target=_blank][href*="github.com/zenntkaixa"], a[target=_blank][href*="linkedin.com"], a[target=_blank][href*="zenntkaixa.dev"]').count()) === 4 && (await page.getByRole('link', { name: 'Send feedback' }).getAttribute('href')).includes('/issues/new/choose'));
+  check('About links out as buttons (feedback on GitHub Issues and a no-account form, GitHub, LinkedIn, Portfolio)', (await page.locator('a[target=_blank][href*="github.com/zenntkaixa"], a[target=_blank][href*="linkedin.com"], a[target=_blank][href*="zenntkaixa.dev"]').count()) === 4 && (await page.getByRole('link', { name: 'Feedback on GitHub' }).getAttribute('href')).includes('/issues/new/choose') && (await page.getByRole('link', { name: 'Quick feedback (no account)' }).getAttribute('href')).startsWith('https://forms.gle/'));
   await page.getByRole('link', { name: 'Back to the radio' }).click();
   check('"Back to the radio" returns to the player', await page.getByRole('heading', { name: 'Listen live' }).waitFor({ timeout: 10000 }).then(() => true, () => false));
   check('the base tab title is back on the radio page', (await page.title()).startsWith('radiozk'), await page.title());

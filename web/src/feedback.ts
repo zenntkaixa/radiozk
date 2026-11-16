@@ -2,6 +2,10 @@
 // .github/ISSUE_TEMPLATE (test/feedback.test.ts keeps the link and the forms in step).
 export const FEEDBACK_URL = 'https://github.com/zenntkaixa/radiozk/issues/new/choose';
 
+// A Google Form for visitors without a GitHub account: opened as a link in a new tab (not embedded, so the CSP is untouched).
+// Whatever a visitor types is stored by Google, which About says (test/feedback.test.ts pins the host).
+export const FORM_URL = 'https://forms.gle/gWCVTKcYCym3ifKSA';
+
 const ASKED = 'radiozk.feedbackAsked';
 const LIKES_BEFORE_ASKING = 3;
 

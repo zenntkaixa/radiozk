@@ -185,7 +185,7 @@ describe('RatingButtons', () => {
 
     const third = await renderLoaded({ up: 0, down: 0, mine: 0 }, { artist: 'A', title: 'Three' });
     await userEvent.click(up());
-    expect(await screen.findByRole('link', { name: 'Tell me on GitHub' })).toHaveAttribute('href', expect.stringContaining('github.com/zenntkaixa/radiozk/issues'));
+    expect(await screen.findByRole('link', { name: 'tell me on GitHub' })).toHaveAttribute('href', expect.stringContaining('github.com/zenntkaixa/radiozk/issues'));
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(screen.queryByText(/Glad you like it/)).toBeNull();
     third.unmount();

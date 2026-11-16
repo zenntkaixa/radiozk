@@ -25,7 +25,7 @@ describe('About', () => {
 
   it('offers feedback, GitHub, LinkedIn and Portfolio as safe external links', () => {
     setup();
-    for (const [name, host] of [['Send feedback', 'github.com/zenntkaixa/radiozk/issues'], ['GitHub', 'github.com'], ['LinkedIn', 'linkedin.com'], ['Portfolio', 'zenntkaixa.dev']]) {
+    for (const [name, host] of [['Quick feedback (no account)', 'forms.gle/'], ['Feedback on GitHub', 'github.com/zenntkaixa/radiozk/issues'], ['GitHub', 'github.com'], ['LinkedIn', 'linkedin.com'], ['Portfolio', 'zenntkaixa.dev']]) {
       const a = screen.getByRole('link', { name });
       expect(a.getAttribute('href')).toContain(host);
       expect(a).toHaveAttribute('target', '_blank');
