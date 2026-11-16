@@ -3,6 +3,16 @@ export type Release = { date: string; title: string; items: string[] };
 
 export const CHANGELOG: Release[] = [
   {
+    date: '2026-11-16',
+    title: 'Small polish',
+    items: [
+      'The sleep timer counts down live, in minutes and seconds.',
+      'About now says what is stored: a random ID in your browser, no account, no cookies.',
+      'A hint under the quality choice for when lossless stutters.',
+      'The installed app opens with an indigo splash screen.',
+    ],
+  },
+  {
     date: '2026-11-15',
     title: 'Everything so far',
     items: [

@@ -51,6 +51,14 @@ export default function About() {
           </p>
         </Card>
 
+        <Card icon="🔒" title="What's stored">
+          <p>
+            No account, no cookies and no tracking. Your browser keeps a random ID, and when you rate a track that ID and your vote are saved on
+            the server, so you can change your vote later. Your liked songs stay on this device only. The "listening with you" count is held in
+            memory and forgotten after a minute.
+          </p>
+        </Card>
+
         <Card icon="🛠️" title="Under the hood">
           <ul className="flex flex-wrap gap-2">
             {STACK.map((t) => (

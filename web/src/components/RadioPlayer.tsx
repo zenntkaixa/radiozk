@@ -88,7 +88,7 @@ export default function RadioPlayer() {
 
       {/* Always rendered, so the layout does not jump when the thank-you appears on the first Play (one line is reserved).
           Each piece stays whole when the line wraps on a phone. */}
-      <p className="mt-4 flex min-h-5 flex-wrap gap-x-4 text-sm text-slate-600 dark:text-slate-400">
+      <p className="mt-2 flex min-h-5 flex-wrap gap-x-4 text-sm text-slate-600 dark:text-slate-400">
         {presence.map((t) => <span key={t}>{t}</span>)}
       </p>
 
@@ -129,7 +129,7 @@ export default function RadioPlayer() {
       </div>
 
       {mode === 'hls.js' && (
-        <fieldset className="mt-4 flex gap-4 text-sm">
+        <fieldset className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-describedby="quality-hint">
           <legend className="sr-only">Stream quality</legend>
           {(['lossless', 'aac'] as const).map((q) => (
             <label key={q} className="flex items-center gap-2">
@@ -137,6 +137,7 @@ export default function RadioPlayer() {
               {q === 'lossless' ? 'Lossless (FLAC)' : 'Compatibility (AAC)'}
             </label>
           ))}
+          <p id="quality-hint" className="w-full text-slate-600 dark:text-slate-400">Pick Compatibility if lossless stutters or won't play.</p>
         </fieldset>
       )}
       {mode === 'native' && <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Your browser plays the stream natively and chooses the quality automatically.</p>}
