@@ -18,6 +18,7 @@ export default function Radio() {
           Radio Calico
         </a>
         's public stream, as lossless FLAC over HLS, with an AAC fallback for browsers that can't decode FLAC.{' '}
+        <span className="hidden pointer-fine:inline">Press Space to play or pause. </span>
         <Link to="/whats-new" className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200">What's new</Link>
       </p>
     </>

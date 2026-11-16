@@ -35,6 +35,12 @@ describe('index.html', () => {
     expect(() => readFileSync(web('public', 'og.png'))).not.toThrow();
   });
 
+  it('tells visitors without JavaScript what is wrong, and the canonical host equals the static site\'s', async () => {
+    expect(html).toMatch(/<noscript>[^<]*JavaScript[^<]*<\/noscript>/);
+    const { SITE } = await import('../src/components/Layout.tsx');
+    expect(SITE).toBe(`https://${NAMES.web}.onrender.com`);
+  });
+
   it('ships a robots.txt and a sitemap.xml for the static site\'s host, as real files (not the SPA fallback)', () => {
     const site = `https://${NAMES.web}.onrender.com/`;
     const robots = readFileSync(web('public', 'robots.txt'), 'utf8');
