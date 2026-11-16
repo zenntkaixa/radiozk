@@ -1,12 +1,12 @@
 # radiozk: a case study
 
-> **Draft for the author to edit.** Every fact below comes from the repository, its history or the live site. Lines marked ✏️ need your own words: why you built it, what you would say to an interviewer. Delete this note when you are happy with it.
-
 **Live:** <https://zenntkaixa-radiozk.onrender.com> · **Code:** <https://github.com/zenntkaixa/radiozk>
 
 ## The project in one paragraph
 
-radiozk is a web player for [Radio Calico](https://www.radio-calico.com/)'s public lossless stream. You press play and hear FLAC in the browser, see the current track and its quality (for example 24-bit / 48 kHz), rate songs with a thumbs up or down, and keep playing while you browse. It started on 2026-10-27 as a way to learn by building something real, while following a Udemy course on Claude Code, and it grew into a deployed, tested site: roughly 190 commits and 90 pull requests in three weeks. ✏️ *One sentence on why a radio player, and why lossless.*
+radiozk is a web player for [Radio Calico](https://www.radio-calico.com/)'s public lossless stream. You press play and hear FLAC in the browser, see the current track and its quality (for example 24-bit / 48 kHz), rate songs with a thumbs up or down, and keep playing while you browse. It started on 2026-10-27 as a way to learn by building something real, while following a Udemy course on Claude Code, and it grew into a deployed, tested site: roughly 190 commits and 90 pull requests in three weeks.
+
+Why a radio player? It looked interesting to build, and it is something I can use every day. Why lossless? In my opinion it is the best way to enjoy music.
 
 ## What it is made of
 
@@ -39,7 +39,7 @@ radiozk is a web player for [Radio Calico](https://www.radio-calico.com/)'s publ
 
 Small pull requests into a `develop` branch, release pull requests into `main`, merge commits, and CI as a gate: type check, tests, CodeQL, `npm audit` and Trivy image scans. After every release I checked the live site read-only: the deploy commit equals the merge commit, the health endpoint answers, and the JavaScript the site serves is byte-for-byte what a local build produces. A bundle-size budget fails the build if the initial download grows, and hls.js is loaded on demand.
 
-I built it with Claude Code as a pair programmer: it wrote and reviewed much of the code and ran the checks, and I chose what to build, what to leave out (no restyling, no tips, no own feedback backend until there is feedback), and when to ship. ✏️ *Say in your own words what you decided and what you learned from that split.*
+I built it with Claude Code as a pair programmer: it wrote and reviewed much of the code and ran the checks, and I chose what to build, what to leave out (no restyling, no tips, no feedback backend of my own until there is feedback to justify one), and when to ship. I decide by what is practical and useful, and a good-looking UI is a plus. Building it also showed me how much more there is to improve.
 
 ## What it doesn't do, honestly
 
@@ -49,7 +49,7 @@ I built it with Claude Code as a pair programmer: it wrote and reviewed much of 
 
 ## What I would do next
 
-A real-phone pass on iOS, a "why lossless" explainer people can share, and, only if feedback arrives, an own feedback channel with the privacy and security work that needs. ✏️ *Add what you would like to learn next.*
+A real-phone pass on iOS and, only if feedback arrives, a feedback channel of my own (it needs privacy and security work, so it has to earn its place). Most of all, I want to learn which features everyday listeners actually use, so I can build things that are useful to them.
 
 ## Numbers
 
