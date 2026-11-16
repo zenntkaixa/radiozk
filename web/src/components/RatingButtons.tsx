@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getRatings, setRating, type RatingSummary } from '../api.ts';
-import { shouldAskFeedback, FEEDBACK_URL } from '../feedback.ts';
+import { shouldAskFeedback, FEEDBACK_URL, FORM_URL } from '../feedback.ts';
 import { setLiked } from '../liked.ts';
 import { applyVote } from '../rating.ts';
 
@@ -85,8 +85,12 @@ export default function RatingButtons({ artist, title }: { artist: string; title
         <p role="status" className="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
           <span>
             Glad you like it! Got an idea or a problem?{' '}
+            <a href={FORM_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-indigo-600 underline dark:text-indigo-400">
+              Use the quick form
+            </a>{' '}
+            (no account) or{' '}
             <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-indigo-600 underline dark:text-indigo-400">
-              Tell me on GitHub
+              tell me on GitHub
             </a>{' '}
             (free account, public).
           </span>

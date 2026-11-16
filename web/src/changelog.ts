@@ -9,6 +9,7 @@ export const CHANGELOG: Release[] = [
       'The sleep timer counts down live, in minutes and seconds.',
       'About now says what is stored: a random ID in your browser, no account, no cookies.',
       'A hint under the quality choice for when lossless stutters.',
+      'Feedback without an account: a quick form on the About page, next to the GitHub option.',
       'A short "Why lossless?" explainer under the player.',
       'The installed app opens with an indigo splash screen.',
     ],
