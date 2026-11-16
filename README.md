@@ -1,8 +1,24 @@
 # radiozk
 
-A local prototype web radio player for the public [Radio Calico](https://d3d4yli4hf5bmh.cloudfront.net/hls/live.m3u8) lossless HLS stream, with a "Now playing" panel and listener thumbs up/down ratings stored in your own database.
+**A live web radio player for lossless audio.** Listen to the public [Radio Calico](https://www.radio-calico.com/) stream in FLAC straight from your browser, see what's playing, and rate the songs.
 
-It is a development prototype, not a production service. Everything runs as the current user from the project directory: no root, no system services (Docker is optional, see below).
+**Live: <https://zenntkaixa-radiozk.onrender.com>** · [What's new](https://zenntkaixa-radiozk.onrender.com/whats-new) · [Case study](docs/case-study.md)
+
+<p>
+  <img src="docs/screenshots/desktop-light.png" alt="radiozk on a desktop: player card, now playing with quality badge, recently played" width="49%">
+  <img src="docs/screenshots/phone.png" alt="radiozk on a phone" width="22%">
+</p>
+
+radiozk is a personal learning project by [zenntkaixa](https://zenntkaixa.dev/): a React front end, a small Express and PostgreSQL API, and nginx, deployed on Render with Neon for the database. It is not affiliated with Radio Calico; their stream, metadata and cover art are used read-only (see [Third-party content](#third-party-content)). The album art in the screenshots is replaced by a placeholder.
+
+## What's technically interesting
+
+- **The player outlives the page.** One `<audio>` element lives above the router, so the music keeps playing while you browse; a mini-player takes over on other pages.
+- **Lossless with a safe fallback.** hls.js would pick AAC by default (higher declared bandwidth), so the FLAC level is pinned, with AAC as a user choice and an automatic fallback. Safari uses native HLS and never loads hls.js.
+- **Small initial bundle, enforced.** hls.js (the heavy part) is a lazy chunk, and CI fails if the initial JS and CSS outgrow a gzip budget.
+- **Anonymous by design.** Ratings use a random browser ID, no account, no cookies. Rate limiting keys on the real client address behind nginx and Render's proxy, and tests check that a forged `X-Forwarded-For` doesn't dodge it.
+- **Tested at four levels.** Unit and API tests, UI tests, security tests, and a Playwright end-to-end run in real Firefox and Chromium that checks the audio really advances in real time. CI also runs CodeQL, `npm audit` and Trivy image scans.
+- **Honest about its limits.** See [Known limitations](#known-limitations) and the [case study](docs/case-study.md), which includes what went wrong along the way.
 
 ## Features
 
@@ -12,6 +28,8 @@ It is a development prototype, not a production service. Everything runs as the 
 - **Ratings**: thumbs up/down per track, stored in PostgreSQL. Listeners are anonymous (a random UUID kept in `localStorage`).
 - **Listening with you**: a live listener count kept in the API's memory (heartbeats while audio plays; shown from three listeners up), plus a YouTube search link on each recently played track.
 - **Frequency bars** while playing (not in Safari's native HLS), a **mini-player** that keeps the radio playing when you open another page, and **dark mode** that follows the system theme.
+- **Sleep timer** with a live countdown and a gentle fade-out, **Liked songs** kept on your device, a **Share** button, and an **installable app** (web manifest, no service worker on purpose).
+- **Feedback** through GitHub Issues or, without an account, a Google Form.
 
 ## Stack
 
