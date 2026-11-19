@@ -65,8 +65,15 @@ RUN npm run build        # tsc && vite build, writes to ../www (/srv/www)
 FROM ${NGINX_IMAGE} AS web
 ENV API_UPSTREAM=api:3000 RESOLVER=127.0.0.11
 # Pick up Alpine security fixes published after the base image was built (curl, openssl, ...).
+# `apk upgrade` cannot move nginx: the base image pins nginx and its four dynamic modules (geoip, image-filter, njs, xslt)
+# to the exact version it was built with. We load none of the modules, so they are removed, which also lifts the pin's
+# hold on nginx, and nginx is then raised to the fixed release (Trivy flagged six HIGH/CRITICAL nginx CVEs in 1.30.6,
+# fixed in 1.30.7). The package keeps the image's own nginx.conf. Raise the minimum when a newer fix is flagged;
+# drop the `apk add` when the base image ships a release that is already new enough.
 USER root
-RUN apk upgrade --no-cache
+RUN apk upgrade --no-cache \
+ && apk del --no-cache nginx-module-geoip nginx-module-image-filter nginx-module-njs nginx-module-xslt \
+ && apk add --no-cache "nginx>=1.30.7"
 USER nginx
 COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY docker/security-headers.conf /etc/nginx/security-headers.conf
