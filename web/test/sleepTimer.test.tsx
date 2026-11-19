@@ -84,6 +84,11 @@ describe('sleep timer', () => {
     expect(vol()).toBe(0.8);
   });
 
+  it('keeps the dropdown at 16px, because iPhone Safari zooms the page into smaller controls', () => {
+    show(<RadioPlayer />);
+    expect(screen.getByLabelText('Sleep timer').className).toContain('text-base');
+  });
+
   it('counts down in m:ss every second', async () => {
     show(<RadioPlayer />);
     await userEvent.selectOptions(screen.getByLabelText('Sleep timer'), '15');
