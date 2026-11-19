@@ -108,11 +108,12 @@ export default function RadioPlayer() {
 
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
         <label htmlFor="sleep" className="text-slate-600 dark:text-slate-400">Sleep timer</label>
+        {/* text-base = 16px: iPhone Safari zooms the page when a control under 16px is focused */}
         <select
           id="sleep"
           value={sleep?.minutes ?? 0}
           onChange={(e) => setSleep(Number(e.target.value) || null)}
-          className="min-h-11 rounded-lg border border-slate-300 bg-white px-2 dark:border-slate-600 dark:bg-slate-900"
+          className="min-h-11 rounded-lg border border-slate-300 bg-white px-2 text-base dark:border-slate-600 dark:bg-slate-900"
         >
           <option value={0}>Off</option>
           {SLEEP_CHOICES.map((m) => (
